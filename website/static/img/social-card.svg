@@ -1,0 +1,11 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#F7F6F0"/>
+  <rect x="70" y="70" width="1060" height="490" rx="32" fill="#14281D"/>
+  <rect x="110" y="118" width="220" height="18" rx="9" fill="#4FC4BB"/>
+  <path d="M122 248H472" stroke="#7DD3C7" stroke-width="22" stroke-linecap="round"/>
+  <path d="M122 306H842" stroke="#F7F6F0" stroke-width="22" stroke-linecap="round"/>
+  <path d="M122 364H732" stroke="#5A8F85" stroke-width="22" stroke-linecap="round"/>
+  <path d="M122 422H624" stroke="#F7F6F0" stroke-opacity="0.48" stroke-width="22" stroke-linecap="round"/>
+  <text x="122" y="210" fill="#F7F6F0" font-family="Georgia, serif" font-size="78" font-weight="700">wailsrel docs</text>
+  <text x="122" y="492" fill="#7DD3C7" font-family="Avenir Next, Segoe UI, sans-serif" font-size="34">Release and update tooling for Wails v3 applications</text>
+</svg>

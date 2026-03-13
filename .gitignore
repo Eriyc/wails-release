@@ -3,3 +3,6 @@ dist/
 
 .direnv
 plan.md
+website/node_modules/
+website/.docusaurus/
+website/build/

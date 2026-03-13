@@ -14,7 +14,7 @@ The repository currently includes the Phase 0-4 baseline:
 Reference gateways now exist in both Go and Bun/WinterTC-style JavaScript:
 
 - Go: `go run ./cmd/wailsrel-gateway`
-- Bun example: `bun run ./docs/examples/bun-gateway.ts`
+- Bun example: `bun run ./examples/authenticated-release-proxy/index.ts`
 
 ## Quick start
 
@@ -24,4 +24,16 @@ go run ./cmd/wailsrel status
 go run ./cmd/wailsrel doctor
 go run ./cmd/wailsrel build
 go run ./cmd/wailsrel delta
+```
+
+## Docs
+
+The repository now includes a Docusaurus site in `website/` and a GitHub Pages deployment workflow in `.github/workflows/docs-pages.yml`.
+
+Run it locally with:
+
+```bash
+cd website
+npm install
+npm start
 ```
