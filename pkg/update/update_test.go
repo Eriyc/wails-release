@@ -172,6 +172,59 @@ func TestHTTPCheckerCheckFiltersByChannelAndMarksMandatoryFromMetadata(t *testin
 	}
 }
 
+func TestHTTPCheckerCheckReturnsFrontendOnlyUpdate(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/manifest.json" {
+			http.NotFound(w, r)
+			return
+		}
+
+		_ = json.NewEncoder(w).Encode(release.Manifest{
+			SchemaVersion: 1,
+			Release: release.ManifestRelease{
+				Version: "1.1.0",
+			},
+			FrontendBundles: []release.ManifestFrontendBundle{
+				{
+					Channel:  "beta",
+					Version:  "1.1.0",
+					CompatID: "2",
+					URL:      "/download/frontend-beta.zip",
+					Checksum: "sha256:frontend",
+					Size:     42,
+				},
+			},
+		})
+	}))
+	defer server.Close()
+
+	checker := NewChecker(server.Client())
+	result, err := checker.Check(context.Background(), CheckOpts{
+		CurrentVersion: "1.0.0",
+		NativeCompat:   "2",
+		Channel:        "beta",
+		ManifestURL:    server.URL + "/manifest.json",
+	})
+	if err != nil {
+		t.Fatalf("check for frontend update: %v", err)
+	}
+	if !result.Available {
+		t.Fatal("expected frontend update to be available")
+	}
+	if result.Native != nil {
+		t.Fatalf("expected no native update, got %+v", result.Native)
+	}
+	if result.Frontend == nil {
+		t.Fatal("expected frontend update info")
+	}
+	if result.Frontend.URL != server.URL+"/download/frontend-beta.zip" {
+		t.Fatalf("expected frontend url %q, got %q", server.URL+"/download/frontend-beta.zip", result.Frontend.URL)
+	}
+	if result.Frontend.Version != "1.1.0" {
+		t.Fatalf("expected frontend version 1.1.0, got %+v", result.Frontend)
+	}
+}
+
 func TestDefaultApplierApplyNativeFallsBackToFullWhenDeltaFails(t *testing.T) {
 	root := t.TempDir()
 	targetPath := filepath.Join(root, "MyApp.bin")
@@ -479,6 +532,43 @@ func TestManagerApplyFrontendOnlyDoesNotRestart(t *testing.T) {
 	}
 	if restartCalls != 0 {
 		t.Fatalf("expected no restart for frontend-only update, got %d", restartCalls)
+	}
+}
+
+func TestManagerApplyFrontendAndNativeAppliesFrontendFirstThenRestarts(t *testing.T) {
+	var calls []string
+
+	manager := NewManager(ManagerOpts{
+		Applier: applierFuncs{
+			applyNative: func(context.Context, *UpdateInfo, ProgressFunc) error {
+				calls = append(calls, "native")
+				return nil
+			},
+			applyFrontend: func(context.Context, *FrontendUpdateInfo, ProgressFunc) error {
+				calls = append(calls, "frontend")
+				return nil
+			},
+		},
+		OnRestart: func() error {
+			calls = append(calls, "restart")
+			return nil
+		},
+	})
+
+	err := manager.Apply(context.Background(), &UpdateInfo{
+		Version:     "2.0.0",
+		ArtifactURL: "https://example.com/app.bin",
+		Frontend: &FrontendUpdateInfo{
+			Channel: "beta",
+			Version: "2.0.0",
+			URL:     "https://example.com/frontend.zip",
+		},
+	})
+	if err != nil {
+		t.Fatalf("apply native + frontend update: %v", err)
+	}
+	if got, want := strings.Join(calls, ","), "frontend,native,restart"; got != want {
+		t.Fatalf("expected call order %q, got %q", want, got)
 	}
 }
 

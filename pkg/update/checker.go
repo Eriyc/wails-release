@@ -89,45 +89,60 @@ func (c *HTTPChecker) Check(ctx context.Context, opts CheckOpts) (*CheckResult, 
 	}
 
 	result := &CheckResult{}
-	if releaseVersion.Compare(currentVersion) <= 0 {
-		return result, nil
+	if releaseVersion.Compare(currentVersion) > 0 {
+		artifact, ok := findArtifact(manifest.Artifacts, runtime.GOOS, runtime.GOARCH, opts.Channel, opts.NativeCompat)
+		if ok {
+			native := &UpdateInfo{
+				Version:      manifest.Release.Version,
+				Channel:      artifact.Metadata["channel"],
+				ArtifactURL:  resolveURL(opts.ManifestURL, artifact.URL),
+				ArtifactHash: artifact.Checksum,
+				ArtifactSize: artifact.Size,
+			}
+			if minVersion := strings.TrimSpace(artifact.Metadata["mandatory_min_version"]); minVersion != "" {
+				mandatoryVersion, err := version.Parse(minVersion)
+				if err != nil {
+					return nil, fmt.Errorf("parse mandatory_min_version: %w", err)
+				}
+				native.Mandatory = currentVersion.Compare(mandatoryVersion) < 0
+			}
+
+			if manifest.Delta != nil && strings.TrimSpace(manifest.Delta.ManifestURL) != "" && strings.TrimSpace(opts.CurrentHash) != "" {
+				deltaManifest, err := c.fetchDeltaManifest(ctx, resolveURL(opts.ManifestURL, manifest.Delta.ManifestURL))
+				if err != nil {
+					return nil, err
+				}
+				if patch, ok := findPatch(deltaManifest, artifact.Path, opts.CurrentHash, artifact.Checksum); ok {
+					native.DeltaURL = resolveURL(resolveURL(opts.ManifestURL, manifest.Delta.ManifestURL), patch.Patch)
+					native.DeltaHash = withSHA256Prefix(patch.PatchSHA256)
+					native.DeltaSize = patch.PatchSize
+					native.DeltaFromHash = withSHA256Prefix(patch.FromSHA256)
+				}
+			}
+
+			result.Native = native
+		}
 	}
 
-	artifact, ok := findArtifact(manifest.Artifacts, runtime.GOOS, runtime.GOARCH, opts.Channel, opts.NativeCompat)
-	if !ok {
-		return result, nil
-	}
-
-	native := &UpdateInfo{
-		Version:      manifest.Release.Version,
-		Channel:      artifact.Metadata["channel"],
-		ArtifactURL:  resolveURL(opts.ManifestURL, artifact.URL),
-		ArtifactHash: artifact.Checksum,
-		ArtifactSize: artifact.Size,
-	}
-	if minVersion := strings.TrimSpace(artifact.Metadata["mandatory_min_version"]); minVersion != "" {
-		mandatoryVersion, err := version.Parse(minVersion)
+	if bundle, ok := findFrontendBundle(manifest.FrontendBundles, opts.Channel, opts.NativeCompat); ok {
+		bundleVersionText := firstNonEmpty(bundle.Version, manifest.Release.Version)
+		bundleVersion, err := version.Parse(bundleVersionText)
 		if err != nil {
-			return nil, fmt.Errorf("parse mandatory_min_version: %w", err)
+			return nil, fmt.Errorf("parse frontend bundle version: %w", err)
 		}
-		native.Mandatory = currentVersion.Compare(mandatoryVersion) < 0
-	}
-
-	if manifest.Delta != nil && strings.TrimSpace(manifest.Delta.ManifestURL) != "" && strings.TrimSpace(opts.CurrentHash) != "" {
-		deltaManifest, err := c.fetchDeltaManifest(ctx, resolveURL(opts.ManifestURL, manifest.Delta.ManifestURL))
-		if err != nil {
-			return nil, err
-		}
-		if patch, ok := findPatch(deltaManifest, artifact.Path, opts.CurrentHash, artifact.Checksum); ok {
-			native.DeltaURL = resolveURL(resolveURL(opts.ManifestURL, manifest.Delta.ManifestURL), patch.Patch)
-			native.DeltaHash = withSHA256Prefix(patch.PatchSHA256)
-			native.DeltaSize = patch.PatchSize
-			native.DeltaFromHash = withSHA256Prefix(patch.FromSHA256)
+		if bundleVersion.Compare(currentVersion) > 0 {
+			result.Frontend = &FrontendUpdateInfo{
+				Channel:  firstNonEmpty(bundle.Channel, opts.Channel),
+				Version:  bundleVersionText,
+				CompatID: bundle.CompatID,
+				URL:      resolveURL(opts.ManifestURL, bundle.URL),
+				Hash:     bundle.Checksum,
+				Size:     bundle.Size,
+			}
 		}
 	}
 
-	result.Available = true
-	result.Native = native
+	result.Available = result.Native != nil || result.Frontend != nil
 	return result, nil
 }
 
@@ -189,6 +204,35 @@ func findArtifact(artifacts []release.ManifestArtifact, osName, arch, channel, n
 	return release.ManifestArtifact{}, false
 }
 
+func findFrontendBundle(bundles []release.ManifestFrontendBundle, channel, nativeCompat string) (release.ManifestFrontendBundle, bool) {
+	channel = strings.TrimSpace(channel)
+	nativeCompat = strings.TrimSpace(nativeCompat)
+
+	var fallback *release.ManifestFrontendBundle
+	for i := range bundles {
+		bundle := bundles[i]
+		if channel != "" && strings.TrimSpace(bundle.Channel) != "" && strings.TrimSpace(bundle.Channel) != channel {
+			continue
+		}
+
+		bundleCompat := strings.TrimSpace(bundle.CompatID)
+		switch {
+		case nativeCompat == "" || bundleCompat == "" || bundleCompat == nativeCompat:
+			if bundleCompat == nativeCompat && nativeCompat != "" {
+				return bundle, true
+			}
+			if fallback == nil {
+				copy := bundle
+				fallback = &copy
+			}
+		}
+	}
+	if fallback == nil {
+		return release.ManifestFrontendBundle{}, false
+	}
+	return *fallback, true
+}
+
 func matchesMetadataFilter(metadata map[string]string, key, expected string) bool {
 	expected = strings.TrimSpace(expected)
 	if expected == "" {
@@ -247,4 +291,14 @@ func withSHA256Prefix(value string) string {
 
 func trimSHA256Prefix(value string) string {
 	return strings.TrimPrefix(strings.TrimSpace(value), "sha256:")
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			return value
+		}
+	}
+	return ""
 }

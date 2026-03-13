@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/Eriyc/wailsrel/pkg/update"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -28,9 +29,13 @@ type Options struct {
 	CurrentVersion    string
 	Channel           string
 	NativeCompat      string
+	FrontendCatalogURL       string
+	FrontendCatalogPublicKey string
+	FrontendAutoCheck        bool
 	TargetPath        string
 	TempDir           string
 	Client            *http.Client
+	FrontendManager   *frontend.BundleManager
 	Checker           update.Checker
 	Applier           update.Applier
 	EventPrefix       string
@@ -69,6 +74,10 @@ type UpdateView struct {
 	DeltaHash     string `json:"deltaHash,omitempty"`
 	DeltaSize     int64  `json:"deltaSize,omitempty"`
 	DeltaFromHash string `json:"deltaFromHash,omitempty"`
+	FrontendURL   string `json:"frontendURL,omitempty"`
+	FrontendHash  string `json:"frontendHash,omitempty"`
+	FrontendSize  int64  `json:"frontendSize,omitempty"`
+	FrontendOnly  bool   `json:"frontendOnly,omitempty"`
 }
 
 type CheckResponse struct {
@@ -113,6 +122,13 @@ type Service struct {
 	lastCheckedAt  string
 	pendingRestart bool
 	lastError      string
+	frontendCatalog         *frontend.Catalog
+	frontendAvailableCodepush *frontend.CodepushEntry
+	frontendExperiments     []frontend.ExperimentEntry
+	frontendLastCheckedAt   string
+	frontendLastError       string
+	frontendOffline         bool
+	frontendStale           bool
 
 	autoCheckCancel context.CancelFunc
 	autoCheckWG     sync.WaitGroup
@@ -156,6 +172,9 @@ func RegisterEvents(prefix string) {
 	registerEventOnce(prefix+":log", func() {
 		application.RegisterEvent[LogEvent](prefix + ":log")
 	})
+	registerEventOnce(prefix+":frontend-reload-required", func() {
+		application.RegisterEvent[struct{}](prefix + ":frontend-reload-required")
+	})
 }
 
 func (s *Service) GetState() State {
@@ -179,14 +198,6 @@ func (s *Service) ApplyPending() ActionResponse {
 	if err := s.validate(); err != nil {
 		response.Error = err.Error()
 		response.Message = "Configuration is incomplete."
-		s.setLastError(err)
-		s.emitLog("error", err.Error())
-		s.emitState()
-		return response
-	}
-	if err := ensureSupportedPlatform(); err != nil {
-		response.Error = err.Error()
-		response.Message = "Update apply failed."
 		s.setLastError(err)
 		s.emitLog("error", err.Error())
 		s.emitState()
@@ -216,7 +227,18 @@ func (s *Service) ApplyPending() ActionResponse {
 		return response
 	}
 
-	s.emitLog("info", fmt.Sprintf("Downloading %s from %s", info.Version, info.ArtifactURL))
+	if requiresNativeApply(info) {
+		if err := ensureSupportedPlatform(); err != nil {
+			response.Error = err.Error()
+			response.Message = "Update apply failed."
+			s.setLastError(err)
+			s.emitLog("error", err.Error())
+			s.emitState()
+			return response
+		}
+	}
+
+	s.emitLog("info", applyLogMessage(info))
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.opts.ApplyTimeout)
 	defer cancel()
@@ -231,7 +253,7 @@ func (s *Service) ApplyPending() ActionResponse {
 	}
 
 	response.Applied = true
-	response.Message = "Update staged successfully. Restart the application to launch it."
+	response.Message = applySuccessMessage(info, s.isPendingRestart())
 	s.clearAvailable()
 	s.clearLastError()
 	s.emitLog("info", response.Message)
@@ -284,7 +306,15 @@ func (s *Service) Restart() ActionResponse {
 }
 
 func (s *Service) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
-	if s.opts.AutoCheckInterval <= 0 {
+	_ = options
+
+	runNative := s.opts.AutoCheckInterval > 0
+	runFrontend := s.opts.FrontendAutoCheck
+
+	if runFrontend && !runNative {
+		go s.RefreshFrontendCatalog()
+	}
+	if !runNative {
 		return nil
 	}
 
@@ -305,6 +335,9 @@ func (s *Service) ServiceStartup(ctx context.Context, options application.Servic
 				return
 			case <-ticker.C:
 				s.check(autoCheckCtx)
+				if runFrontend {
+					s.RefreshFrontendCatalog()
+				}
 			}
 		}
 	}()
@@ -364,6 +397,8 @@ func normalizeOptions(opts Options) Options {
 	opts.CurrentVersion = strings.TrimSpace(opts.CurrentVersion)
 	opts.Channel = strings.TrimSpace(opts.Channel)
 	opts.NativeCompat = strings.TrimSpace(opts.NativeCompat)
+	opts.FrontendCatalogURL = strings.TrimSpace(opts.FrontendCatalogURL)
+	opts.FrontendCatalogPublicKey = strings.TrimSpace(opts.FrontendCatalogPublicKey)
 	opts.TargetPath = strings.TrimSpace(opts.TargetPath)
 	opts.TempDir = strings.TrimSpace(opts.TempDir)
 	opts.EventPrefix = normalizePrefix(opts.EventPrefix)
@@ -387,9 +422,10 @@ func normalizeOptions(opts Options) Options {
 	}
 	if opts.Applier == nil {
 		opts.Applier = update.NewApplier(update.ApplierOptions{
-			Client:     opts.Client,
-			TargetPath: opts.TargetPath,
-			TempDir:    opts.TempDir,
+			Client:          opts.Client,
+			FrontendManager: opts.FrontendManager,
+			TargetPath:      opts.TargetPath,
+			TempDir:         opts.TempDir,
 		})
 	}
 	if opts.Relaunch == nil {
@@ -457,7 +493,8 @@ func (s *Service) checkLocked(parent context.Context) (CheckResponse, error) {
 		return response, err
 	}
 
-	if result == nil || !result.Available || result.Native == nil {
+	available := mergeUpdateResult(result)
+	if result == nil || !result.Available || available == nil {
 		s.clearAvailable()
 		s.clearLastError()
 		s.emitLog("info", "No newer release was found at the configured manifest URL.")
@@ -466,10 +503,10 @@ func (s *Service) checkLocked(parent context.Context) (CheckResponse, error) {
 	}
 
 	response.Available = true
-	response.Update = toUpdateView(result.Native)
-	s.setAvailable(result.Native)
+	response.Update = toUpdateView(available)
+	s.setAvailable(available)
 	s.clearLastError()
-	s.emitLog("info", fmt.Sprintf("Update %s is available.", result.Native.Version))
+	s.emitLog("info", availabilityLogMessage(available))
 	s.emitState()
 	return response, nil
 }
@@ -637,7 +674,7 @@ func toUpdateView(info *update.UpdateInfo) *UpdateView {
 	if info == nil {
 		return nil
 	}
-	return &UpdateView{
+	view := &UpdateView{
 		Version:       info.Version,
 		Channel:       info.Channel,
 		ReleaseNotes:  info.ReleaseNotes,
@@ -649,6 +686,90 @@ func toUpdateView(info *update.UpdateInfo) *UpdateView {
 		DeltaHash:     info.DeltaHash,
 		DeltaSize:     info.DeltaSize,
 		DeltaFromHash: info.DeltaFromHash,
+		FrontendOnly:  info.Frontend != nil && strings.TrimSpace(info.ArtifactURL) == "",
+	}
+	if info.Frontend != nil {
+		view.FrontendURL = info.Frontend.URL
+		view.FrontendHash = info.Frontend.Hash
+		view.FrontendSize = info.Frontend.Size
+	}
+	return view
+}
+
+func mergeUpdateResult(result *update.CheckResult) *update.UpdateInfo {
+	if result == nil {
+		return nil
+	}
+	switch {
+	case result.Native == nil && result.Frontend == nil:
+		return nil
+	case result.Native != nil:
+		merged := cloneUpdateInfo(result.Native)
+		if result.Frontend != nil {
+			frontend := *result.Frontend
+			merged.Frontend = &frontend
+		}
+		return merged
+	default:
+		return &update.UpdateInfo{
+			Version:  result.Frontend.Version,
+			Channel:  result.Frontend.Channel,
+			Frontend: cloneFrontendInfo(result.Frontend),
+		}
+	}
+}
+
+func cloneFrontendInfo(info *update.FrontendUpdateInfo) *update.FrontendUpdateInfo {
+	if info == nil {
+		return nil
+	}
+	cloned := *info
+	return &cloned
+}
+
+func requiresNativeApply(info *update.UpdateInfo) bool {
+	return info != nil && strings.TrimSpace(info.ArtifactURL) != ""
+}
+
+func applyLogMessage(info *update.UpdateInfo) string {
+	switch {
+	case info == nil:
+		return "Starting update apply."
+	case info.Frontend != nil && requiresNativeApply(info):
+		return fmt.Sprintf(
+			"Downloading frontend bundle %s from %s and native update %s from %s",
+			info.Frontend.Version,
+			info.Frontend.URL,
+			info.Version,
+			info.ArtifactURL,
+		)
+	case info.Frontend != nil:
+		return fmt.Sprintf("Downloading frontend bundle %s from %s", info.Frontend.Version, info.Frontend.URL)
+	default:
+		return fmt.Sprintf("Downloading %s from %s", info.Version, info.ArtifactURL)
+	}
+}
+
+func applySuccessMessage(info *update.UpdateInfo, pendingRestart bool) string {
+	if pendingRestart {
+		return "Update staged successfully. Restart the application to launch it."
+	}
+	if info != nil && info.Frontend != nil {
+		return "Frontend bundle installed successfully."
+	}
+	return "Update applied successfully."
+}
+
+func availabilityLogMessage(info *update.UpdateInfo) string {
+	switch {
+	case info == nil:
+		return "An update is available."
+	case info.Frontend != nil && requiresNativeApply(info):
+		return fmt.Sprintf("Update %s is available with a frontend bundle.", info.Version)
+	case info.Frontend != nil:
+		return fmt.Sprintf("Frontend bundle %s is available.", info.Frontend.Version)
+	default:
+		return fmt.Sprintf("Update %s is available.", info.Version)
 	}
 }
 

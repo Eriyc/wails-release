@@ -202,6 +202,10 @@ Events.On("update:progress", (event) => {
     renderProgress(event.data);
 });
 
+Events.On("update:frontend-reload-required", () => {
+    window.location.reload();
+});
+
 async function bootstrap() {
     await refreshState();
     pushLog("info", "Ready. Start the Bun proxy, set the base URL and token, then check, stage, and restart explicitly.");

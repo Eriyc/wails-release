@@ -7,6 +7,7 @@ const sidebars: SidebarsConfig = {
     'commands',
     'ci',
     'github-pages',
+    'frontend-runtime',
   ],
 };
 

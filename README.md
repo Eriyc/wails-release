@@ -14,7 +14,7 @@ go install github.com/Eriyc/wailsrel/cmd/wailsrel@latest
 2. Configure Wails-owned build hooks, artifact discovery, and release hosting.
 3. Point your app at a stable `manifest.json` URL.
 4. Run the release commands in CI.
-5. Use `pkg/update` and optional `pkg/frontend` in the client app.
+5. Use `pkg/update`, `pkg/wailsupdate`, and optional `pkg/frontend` in the client app.
 
 ```bash
 wailsrel init --name "MyApp" --identifier "com.example.myapp"
@@ -36,3 +36,4 @@ wailsrel release
 - [CLI Commands](./website/docs/commands.md)
 - [CI and GitHub Actions](./website/docs/ci.md)
 - [Client and Hosting](./website/docs/github-pages.md)
+- [Frontend Runtime](./website/docs/frontend-runtime.md)

@@ -112,4 +112,4 @@ That setup expects your server to expose:
 - `GET /delta/manifest.json`
 - `GET /download/{tag}/{asset_name}`
 
-Use [Client and Hosting](./github-pages.md) for the gateway and updater integration details.
+Use [Client and Hosting](./github-pages.md) for native manifest and gateway details, and [Frontend Runtime](./frontend-runtime.md) for client-side `codepush` and `experiments` integration.

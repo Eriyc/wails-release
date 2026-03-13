@@ -201,6 +201,10 @@ Events.On("update:progress", (event) => {
     renderProgress(event.data);
 });
 
+Events.On("update:frontend-reload-required", () => {
+    window.location.reload();
+});
+
 async function bootstrap() {
     await refreshState();
     pushLog("info", "Ready. Configure the GitHub repository or manifest URL, then check, stage, and restart explicitly.");

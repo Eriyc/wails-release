@@ -120,25 +120,19 @@ manager := update.NewManager(update.ManagerOpts{
 
 `CurrentHash` is optional, but delta selection only works when the local executable checksum matches a published artifact.
 
-## Frontend bundle integration
+## Frontend runtime integration
 
-If you ship frontend bundles by channel, add a `frontend.BundleManager` to the applier:
+Frontend `codepush` and `experiments` now use a separate signed frontend catalog served by your authenticated proxy.
 
-```go
-bundles := &frontend.BundleManager{
-    AppID:        "com.example.myapp",
-    NativeCompat: "1",
-}
+Clients need:
 
-applier := update.NewApplier(update.ApplierOptions{
-    Client:          client,
-    FrontendManager: bundles,
-    TargetPath:      targetPath,
-    TempDir:         filepath.Join(os.TempDir(), "myapp-update"),
-})
-```
+- a pinned `FrontendCatalogURL`
+- an Ed25519 `FrontendCatalogPublicKey`
+- a shared `frontend.BundleManager`
+- `frontend.NewRuntimeFS(...)` in the Wails asset handler
+- a listener for `update:frontend-reload-required`
 
-Use `wailsrel bundle` to create bundle zips and `wailsrel channel <name>` to switch the active channel on the client machine.
+Use [Frontend Runtime](./frontend-runtime.md) for the complete client integration.
 
 ## Authenticated clients
 

@@ -25,15 +25,22 @@ func (s stubChecker) Check(ctx context.Context, opts update.CheckOpts) (*update.
 }
 
 type stubApplier struct {
-	applyNative func(context.Context, *update.UpdateInfo, update.ProgressFunc) error
+	applyNative   func(context.Context, *update.UpdateInfo, update.ProgressFunc) error
+	applyFrontend func(context.Context, *update.FrontendUpdateInfo, update.ProgressFunc) error
 }
 
 func (s stubApplier) ApplyNative(ctx context.Context, info *update.UpdateInfo, progress update.ProgressFunc) error {
+	if s.applyNative == nil {
+		return nil
+	}
 	return s.applyNative(ctx, info, progress)
 }
 
 func (s stubApplier) ApplyFrontend(ctx context.Context, info *update.FrontendUpdateInfo, progress update.ProgressFunc) error {
-	return nil
+	if s.applyFrontend == nil {
+		return nil
+	}
+	return s.applyFrontend(ctx, info, progress)
 }
 
 func TestNewServiceDefaults(t *testing.T) {
@@ -147,6 +154,47 @@ func TestCheckNowCachesAndClearsAvailableState(t *testing.T) {
 	}
 }
 
+func TestCheckNowReturnsFrontendOnlyUpdate(t *testing.T) {
+	targetPath := writeTempFile(t, "binary-data")
+
+	service := NewService(Options{
+		ManifestURL:    "https://example.com/manifest.json",
+		CurrentVersion: "1.0.0",
+		TargetPath:     targetPath,
+		Checker: stubChecker{check: func(ctx context.Context, opts update.CheckOpts) (*update.CheckResult, error) {
+			return &update.CheckResult{
+				Available: true,
+				Frontend: &update.FrontendUpdateInfo{
+					Channel:  "beta",
+					Version:  "1.1.0",
+					CompatID: "2",
+					URL:      "https://example.com/frontend-beta.zip",
+					Hash:     "sha256:frontend",
+					Size:     42,
+				},
+			}, nil
+		}},
+		Applier: stubApplier{},
+	})
+
+	response := service.CheckNow()
+	if !response.Available || response.Update == nil {
+		t.Fatalf("expected frontend update to be available, got %+v", response)
+	}
+	if !response.Update.FrontendOnly {
+		t.Fatalf("expected frontend-only update view, got %+v", response.Update)
+	}
+	if response.Update.FrontendURL != "https://example.com/frontend-beta.zip" {
+		t.Fatalf("unexpected frontend url: %+v", response.Update)
+	}
+	if response.Update.Version != "1.1.0" {
+		t.Fatalf("expected frontend version 1.1.0, got %+v", response.Update)
+	}
+	if state := service.GetState(); state.AvailableUpdate == nil || !state.AvailableUpdate.FrontendOnly {
+		t.Fatalf("expected cached frontend-only update, got %+v", state.AvailableUpdate)
+	}
+}
+
 func TestApplyPendingStagesWithoutRestart(t *testing.T) {
 	targetPath := writeTempFile(t, "binary-data")
 	updateInfo := &update.UpdateInfo{
@@ -228,6 +276,62 @@ func TestApplyPendingChecksWhenNoCachedUpdate(t *testing.T) {
 	}
 	if atomic.LoadInt32(&applies) != 1 {
 		t.Fatalf("expected one apply, got %d", applies)
+	}
+}
+
+func TestApplyPendingInstallsFrontendBundleWithoutRestart(t *testing.T) {
+	targetPath := writeTempFile(t, "binary-data")
+	frontendInfo := &update.FrontendUpdateInfo{
+		Channel: "beta",
+		Version: "1.1.0",
+		URL:     "https://example.com/frontend-beta.zip",
+		Hash:    "sha256:frontend",
+		Size:    42,
+	}
+
+	var nativeCalls int32
+	var frontendCalls int32
+	service := NewService(Options{
+		ManifestURL:    "https://example.com/manifest.json",
+		CurrentVersion: "1.0.0",
+		TargetPath:     targetPath,
+		Checker: stubChecker{check: func(ctx context.Context, opts update.CheckOpts) (*update.CheckResult, error) {
+			return &update.CheckResult{
+				Available: true,
+				Frontend:  frontendInfo,
+			}, nil
+		}},
+		Applier: stubApplier{
+			applyNative: func(context.Context, *update.UpdateInfo, update.ProgressFunc) error {
+				atomic.AddInt32(&nativeCalls, 1)
+				return nil
+			},
+			applyFrontend: func(ctx context.Context, info *update.FrontendUpdateInfo, progress update.ProgressFunc) error {
+				if !reflect.DeepEqual(info, frontendInfo) {
+					t.Fatalf("unexpected frontend info: %+v", info)
+				}
+				atomic.AddInt32(&frontendCalls, 1)
+				progress(42, 42)
+				return nil
+			},
+		},
+	})
+
+	response := service.ApplyPending()
+	if !response.Applied {
+		t.Fatalf("expected frontend apply success, got %+v", response)
+	}
+	if response.Message != "Frontend bundle installed successfully." {
+		t.Fatalf("unexpected message: %+v", response)
+	}
+	if atomic.LoadInt32(&nativeCalls) != 0 {
+		t.Fatalf("expected no native apply calls, got %d", nativeCalls)
+	}
+	if atomic.LoadInt32(&frontendCalls) != 1 {
+		t.Fatalf("expected one frontend apply call, got %d", frontendCalls)
+	}
+	if state := service.GetState(); state.PendingRestart {
+		t.Fatalf("frontend-only apply should not require restart, got %+v", state)
 	}
 }
 

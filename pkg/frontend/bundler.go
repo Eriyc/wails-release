@@ -23,9 +23,14 @@ type BundleManifest struct {
 	Version       string `json:"version,omitempty"`
 	CompatID      string `json:"compat_id,omitempty"`
 	CompatVersion int    `json:"compat_version,omitempty"`
+	Kind          string `json:"kind,omitempty"`
+	Name          string `json:"name,omitempty"`
 	Channel       string `json:"channel"`
 	MinNativeVer  string `json:"min_native_version,omitempty"`
 	Checksum      string `json:"checksum,omitempty"`
+	Force         bool   `json:"force,omitempty"`
+	SourceBranch  string `json:"source_branch,omitempty"`
+	CommitSHA     string `json:"commit_sha,omitempty"`
 	Timestamp     string `json:"timestamp,omitempty"`
 }
 
@@ -43,6 +48,11 @@ type BundleOpts struct {
 	CompatVer     string
 	CompatVersion int
 	Channel       string
+	Kind          string
+	Name          string
+	SourceBranch  string
+	CommitSHA     string
+	Force         bool
 	Version       string
 }
 
@@ -75,11 +85,16 @@ func (DefaultBundler) BuildBundle(ctx context.Context, opts BundleOpts) (*Bundle
 	if strings.TrimSpace(opts.BuildCommand) == "" {
 		return nil, fmt.Errorf("build command is required")
 	}
-	if strings.TrimSpace(opts.Channel) == "" {
-		return nil, fmt.Errorf("channel is required")
+	if strings.TrimSpace(opts.Channel) == "" && strings.TrimSpace(opts.Kind) == "" {
+		return nil, fmt.Errorf("channel or kind is required")
 	}
 	if strings.TrimSpace(opts.Version) == "" {
 		return nil, fmt.Errorf("version is required")
+	}
+	if strings.TrimSpace(opts.Name) != "" {
+		if err := ValidateVariantName(opts.Name); err != nil {
+			return nil, err
+		}
 	}
 
 	if _, err := runBuildCommand(ctx, workDir, opts.BuildCommand); err != nil {
@@ -115,14 +130,23 @@ func (DefaultBundler) BuildBundle(ctx context.Context, opts BundleOpts) (*Bundle
 		Version:       opts.Version,
 		CompatID:      compatID,
 		CompatVersion: compatVersion,
+		Kind:          strings.TrimSpace(opts.Kind),
+		Name:          strings.TrimSpace(opts.Name),
 		Channel:       opts.Channel,
 		Checksum:      "sha256:" + checksum,
+		Force:         opts.Force,
+		SourceBranch:  strings.TrimSpace(opts.SourceBranch),
+		CommitSHA:     strings.TrimSpace(opts.CommitSHA),
 		Timestamp:     time.Now().UTC().Format(time.RFC3339),
 	}
 
 	outputPath := opts.OutputPath
 	if outputPath == "" {
-		outputPath = filepath.Join(outputDir, fmt.Sprintf("frontend-%s-%s.zip", opts.Channel, opts.Version))
+		outputLabel := strings.TrimSpace(opts.Channel)
+		if outputLabel == "" {
+			outputLabel = firstNonEmptyPath(strings.TrimSpace(opts.Name), strings.TrimSpace(opts.Kind))
+		}
+		outputPath = filepath.Join(outputDir, fmt.Sprintf("frontend-%s-%s.zip", outputLabel, opts.Version))
 	}
 	if !filepath.IsAbs(outputPath) {
 		outputPath = filepath.Join(workDir, outputPath)

@@ -30,4 +30,4 @@ wailsrel delta
 wailsrel release
 ```
 
-Use [Getting Started](./getting-started.md) to create the config, [CI and GitHub Actions](./ci.md) for release automation, and [Client and Hosting](./github-pages.md) for runtime integration.
+Use [Getting Started](./getting-started.md) to create the config, [CI and GitHub Actions](./ci.md) for release automation, [Client and Hosting](./github-pages.md) for native manifest delivery, and [Frontend Runtime](./frontend-runtime.md) for frontend `codepush` and `experiments`.

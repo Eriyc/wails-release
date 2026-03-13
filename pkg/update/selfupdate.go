@@ -90,14 +90,17 @@ func (m *Manager) Apply(ctx context.Context, info *UpdateInfo) error {
 	if m.Applier == nil {
 		return fmt.Errorf("applier is required")
 	}
-	if info.Frontend != nil && strings.TrimSpace(info.ArtifactURL) == "" {
+	frontendOnly := info.Frontend != nil && strings.TrimSpace(info.ArtifactURL) == ""
+	if info.Frontend != nil {
 		if err := m.Applier.ApplyFrontend(ctx, info.Frontend, m.OnProgress); err != nil {
 			if m.OnError != nil {
 				m.OnError(err)
 			}
 			return err
 		}
-		return nil
+		if frontendOnly {
+			return nil
+		}
 	}
 	if err := m.Applier.ApplyNative(ctx, info, m.OnProgress); err != nil {
 		if m.OnError != nil {

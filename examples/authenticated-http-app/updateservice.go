@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/Eriyc/wailsrel/pkg/wailsupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -19,6 +20,8 @@ type appConfig struct {
 	SourceLabel    string
 	BaseURL        string
 	ManifestURL    string
+	FrontendCatalogURL       string
+	FrontendCatalogPublicKey string
 	CurrentVersion string
 	Channel        string
 	NativeCompat   string
@@ -28,7 +31,8 @@ type appConfig struct {
 }
 
 type UpdateService struct {
-	service *wailsupdate.Service
+	service         *wailsupdate.Service
+	frontendManager *frontend.BundleManager
 }
 
 func loadConfig() appConfig {
@@ -43,6 +47,8 @@ func loadConfig() appConfig {
 		SourceLabel:    "HTTP proxy with bearer auth",
 		BaseURL:        baseURL,
 		ManifestURL:    manifestURL,
+		FrontendCatalogURL:       strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_URL")),
+		FrontendCatalogPublicKey: strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY")),
 		CurrentVersion: firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
 		Channel:        firstNonEmpty(os.Getenv("EXAMPLE_UPDATE_CHANNEL"), "stable"),
 		NativeCompat:   strings.TrimSpace(os.Getenv("EXAMPLE_NATIVE_COMPAT")),
@@ -57,15 +63,22 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 		Timeout:   45 * time.Second,
 		Transport: wailsupdate.BearerTransport(nil, cfg.Token),
 	}
+	frontendManager := &frontend.BundleManager{
+		AppID:        "com.example.wailsrel.authenticatedhttpapp",
+		NativeCompat: cfg.NativeCompat,
+	}
 
 	service := wailsupdate.NewService(wailsupdate.Options{
 		ManifestURL:    cfg.ManifestURL,
+		FrontendCatalogURL: cfg.FrontendCatalogURL,
+		FrontendCatalogPublicKey: cfg.FrontendCatalogPublicKey,
 		CurrentVersion: cfg.CurrentVersion,
 		Channel:        cfg.Channel,
 		NativeCompat:   cfg.NativeCompat,
 		TargetPath:     cfg.TargetPath,
 		TempDir:        cfg.TempDir,
 		Client:         client,
+		FrontendManager: frontendManager,
 		DescribeState: func(state *wailsupdate.State) {
 			if state.Metadata == nil {
 				state.Metadata = map[string]string{}
@@ -77,7 +90,7 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 			state.Notes = append(state.Notes,
 				"EXAMPLE_PROXY_TOKEN is sent as a bearer token on all updater HTTP requests from this app.",
 				"The Bun proxy keeps manifests stable at /manifest.json and rewrites artifact URLs back to /download/{tag}/{asset_name}.",
-				"ApplyPending stages the native binary only. Use Restart to explicitly relaunch the app into the updated executable.",
+				"ApplyPending installs the matched frontend bundle first and stages the native binary when a native update is also available.",
 			)
 			if strings.TrimSpace(cfg.Token) == "" {
 				state.Notes = append(state.Notes, "EXAMPLE_PROXY_TOKEN is currently empty. The proxy can still serve manifests, but protected downloads will fail with 401.")
@@ -85,7 +98,7 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 		},
 	})
 
-	return &UpdateService{service: service}
+	return &UpdateService{service: service, frontendManager: frontendManager}
 }
 
 func (s *UpdateService) GetState() wailsupdate.State {
@@ -102,6 +115,30 @@ func (s *UpdateService) ApplyPending() wailsupdate.ActionResponse {
 
 func (s *UpdateService) Restart() wailsupdate.ActionResponse {
 	return s.service.Restart()
+}
+
+func (s *UpdateService) GetFrontendState() wailsupdate.FrontendState {
+	return s.service.GetFrontendState()
+}
+
+func (s *UpdateService) RefreshFrontendCatalog() wailsupdate.FrontendState {
+	return s.service.RefreshFrontendCatalog()
+}
+
+func (s *UpdateService) ApplyCodepush() wailsupdate.ActionResponse {
+	return s.service.ApplyCodepush()
+}
+
+func (s *UpdateService) SwitchExperiment(name string) wailsupdate.ActionResponse {
+	return s.service.SwitchExperiment(name)
+}
+
+func (s *UpdateService) ResetFrontend() wailsupdate.ActionResponse {
+	return s.service.ResetFrontend()
+}
+
+func (s *UpdateService) FrontendManager() *frontend.BundleManager {
+	return s.frontendManager
 }
 
 func (s *UpdateService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {
