@@ -31,11 +31,15 @@ The repository includes two release gateway implementations:
 
 ## CI baseline
 
-The existing continuous integration workflow runs:
+The repository keeps its baseline validation workflow in `.github/workflows/ci.yml`.
+
+It currently runs this matrix on Ubuntu, macOS, and Windows:
 
 ```bash
 go test ./...
 go vet ./...
 ```
+
+For a concrete GitHub Actions example that runs `wailsrel` itself, see [CI and GitHub Actions](./ci.md).
 
 That remains separate from the docs deployment workflow. GitHub Pages builds only the Docusaurus site in `website/`.
