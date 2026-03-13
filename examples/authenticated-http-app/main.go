@@ -4,7 +4,6 @@ import (
 	"embed"
 	"log"
 
-	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/Eriyc/wailsrel/pkg/wailsupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -26,7 +25,7 @@ func main() {
 			application.NewService(service),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(frontend.NewRuntimeFS(service.FrontendManager(), assets)),
+			Handler: application.AssetFileServerFS(service.AssetFS(assets)),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,

@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/Eriyc/wailsrel/pkg/wailsupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -16,63 +16,60 @@ import (
 var appVersion = "0.1.0"
 
 type appConfig struct {
-	AppName        string
-	SourceLabel    string
-	Repository     string
-	ManifestURL    string
-	FrontendCatalogURL    string
+	AppName                  string
+	SourceLabel              string
+	Repository               string
+	ManifestURL              string
+	FrontendCatalogURL       string
 	FrontendCatalogPublicKey string
-	CurrentVersion string
-	Channel        string
-	NativeCompat   string
-	TargetPath     string
-	TempDir        string
+	CurrentVersion           string
+	Channel                  string
+	NativeCompat             string
+	TargetPath               string
+	TempDir                  string
 }
 
 type UpdateService struct {
-	service         *wailsupdate.Service
-	frontendManager *frontend.BundleManager
+	runtime *wailsupdate.Runtime
+	service *wailsupdate.Service
 }
 
 func loadConfig() appConfig {
 	repository := strings.TrimSpace(os.Getenv("EXAMPLE_GITHUB_REPOSITORY"))
 	manifestURL := strings.TrimSpace(os.Getenv("EXAMPLE_GITHUB_MANIFEST_URL"))
-	if manifestURL == "" {
-		manifestURL = wailsupdate.GitHubLatestManifestURL(repository)
-	}
 
 	return appConfig{
-		AppName:        "GitHub Releases Example",
-		SourceLabel:    "GitHub Releases (direct)",
-		Repository:     repository,
-		ManifestURL:    manifestURL,
-		FrontendCatalogURL:    strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_URL")),
+		AppName:                  "GitHub Releases Example",
+		SourceLabel:              "GitHub Releases (direct)",
+		Repository:               repository,
+		ManifestURL:              manifestURL,
+		FrontendCatalogURL:       strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_URL")),
 		FrontendCatalogPublicKey: strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY")),
-		CurrentVersion: firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
-		Channel:        firstNonEmpty(os.Getenv("EXAMPLE_UPDATE_CHANNEL"), "stable"),
-		NativeCompat:   strings.TrimSpace(os.Getenv("EXAMPLE_NATIVE_COMPAT")),
-		TargetPath:     firstNonEmpty(os.Getenv("EXAMPLE_TARGET_PATH"), wailsupdate.DefaultTargetPath()),
-		TempDir:        firstNonEmpty(os.Getenv("EXAMPLE_TEMP_DIR"), filepath.Join(os.TempDir(), "wailsrel-github-example")),
+		CurrentVersion:           firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
+		Channel:                  firstNonEmpty(os.Getenv("EXAMPLE_UPDATE_CHANNEL"), "stable"),
+		NativeCompat:             strings.TrimSpace(os.Getenv("EXAMPLE_NATIVE_COMPAT")),
+		TargetPath:               firstNonEmpty(os.Getenv("EXAMPLE_TARGET_PATH"), wailsupdate.DefaultTargetPath()),
+		TempDir:                  firstNonEmpty(os.Getenv("EXAMPLE_TEMP_DIR"), filepath.Join(os.TempDir(), "wailsrel-github-example")),
 	}
 }
 
 func NewUpdateService(cfg appConfig) *UpdateService {
-	client := &http.Client{Timeout: 45 * time.Second}
-	frontendManager := &frontend.BundleManager{
-		AppID:        "com.example.wailsrel.githubreleasesapp",
-		NativeCompat: cfg.NativeCompat,
-	}
-	service := wailsupdate.NewService(wailsupdate.Options{
-		ManifestURL:    cfg.ManifestURL,
-		FrontendCatalogURL: cfg.FrontendCatalogURL,
-		FrontendCatalogPublicKey: cfg.FrontendCatalogPublicKey,
+	runtime, err := wailsupdate.NewRuntime(wailsupdate.RuntimeOptions{
+		AppID:          "com.example.wailsrel.githubreleasesapp",
 		CurrentVersion: cfg.CurrentVersion,
 		Channel:        cfg.Channel,
 		NativeCompat:   cfg.NativeCompat,
 		TargetPath:     cfg.TargetPath,
 		TempDir:        cfg.TempDir,
-		Client:         client,
-		FrontendManager: frontendManager,
+		Source: wailsupdate.RuntimeSource{
+			Repository:  cfg.Repository,
+			ManifestURL: cfg.ManifestURL,
+		},
+		Frontend: wailsupdate.RuntimeFrontend{
+			CatalogURL:       cfg.FrontendCatalogURL,
+			CatalogPublicKey: cfg.FrontendCatalogPublicKey,
+		},
+		Client: &http.Client{Timeout: 45 * time.Second},
 		DescribeState: func(state *wailsupdate.State) {
 			if state.Metadata == nil {
 				state.Metadata = map[string]string{}
@@ -89,8 +86,14 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 			)
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
 
-	return &UpdateService{service: service, frontendManager: frontendManager}
+	return &UpdateService{
+		runtime: runtime,
+		service: runtime.Service(),
+	}
 }
 
 func (s *UpdateService) GetState() wailsupdate.State {
@@ -129,8 +132,8 @@ func (s *UpdateService) ResetFrontend() wailsupdate.ActionResponse {
 	return s.service.ResetFrontend()
 }
 
-func (s *UpdateService) FrontendManager() *frontend.BundleManager {
-	return s.frontendManager
+func (s *UpdateService) AssetFS(embedded fs.FS) fs.FS {
+	return s.runtime.AssetFS(embedded)
 }
 
 func (s *UpdateService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {

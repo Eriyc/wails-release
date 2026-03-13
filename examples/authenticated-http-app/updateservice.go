@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/Eriyc/wailsrel/pkg/wailsupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -20,8 +20,8 @@ type appConfig struct {
 	SourceLabel              string
 	BaseURL                  string
 	ManifestURL              string
-	FrontendCatalogURL       string
 	FrontendCatalogPublicKey string
+	FrontendCatalogURL       string
 	CurrentVersion           string
 	Channel                  string
 	NativeCompat             string
@@ -31,22 +31,18 @@ type appConfig struct {
 }
 
 type UpdateService struct {
-	service         *wailsupdate.Service
-	frontendManager *frontend.BundleManager
+	runtime *wailsupdate.Runtime
+	service *wailsupdate.Service
 }
 
 func loadConfig() appConfig {
 	baseURL := strings.TrimRight(firstNonEmpty(os.Getenv("EXAMPLE_PROXY_BASE_URL"), "http://127.0.0.1:8787"), "/")
-	manifestURL := strings.TrimSpace(os.Getenv("EXAMPLE_PROXY_MANIFEST_URL"))
-	if manifestURL == "" && baseURL != "" {
-		manifestURL = baseURL + "/manifest"
-	}
 
 	return appConfig{
 		AppName:                  "Authenticated HTTP Example",
 		SourceLabel:              "HTTP proxy with bearer auth",
 		BaseURL:                  baseURL,
-		ManifestURL:              manifestURL,
+		ManifestURL:              strings.TrimSpace(os.Getenv("EXAMPLE_PROXY_MANIFEST_URL")),
 		FrontendCatalogURL:       strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_URL")),
 		FrontendCatalogPublicKey: strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY")),
 		CurrentVersion:           firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
@@ -59,26 +55,23 @@ func loadConfig() appConfig {
 }
 
 func NewUpdateService(cfg appConfig) *UpdateService {
-	client := &http.Client{
-		Timeout:   45 * time.Second,
-		Transport: wailsupdate.BearerTransport(nil, cfg.Token),
-	}
-	frontendManager := &frontend.BundleManager{
-		AppID:        "com.example.wailsrel.authenticatedhttpapp",
-		NativeCompat: cfg.NativeCompat,
-	}
-
-	service := wailsupdate.NewService(wailsupdate.Options{
-		ManifestURL:              cfg.ManifestURL,
-		FrontendCatalogURL:       cfg.FrontendCatalogURL,
-		FrontendCatalogPublicKey: cfg.FrontendCatalogPublicKey,
-		CurrentVersion:           cfg.CurrentVersion,
-		Channel:                  cfg.Channel,
-		NativeCompat:             cfg.NativeCompat,
-		TargetPath:               cfg.TargetPath,
-		TempDir:                  cfg.TempDir,
-		Client:                   client,
-		FrontendManager:          frontendManager,
+	runtime, err := wailsupdate.NewRuntime(wailsupdate.RuntimeOptions{
+		AppID:          "com.example.wailsrel.authenticatedhttpapp",
+		CurrentVersion: cfg.CurrentVersion,
+		Channel:        cfg.Channel,
+		NativeCompat:   cfg.NativeCompat,
+		TargetPath:     cfg.TargetPath,
+		TempDir:        cfg.TempDir,
+		Source: wailsupdate.RuntimeSource{
+			BaseURL:     cfg.BaseURL,
+			ManifestURL: cfg.ManifestURL,
+		},
+		Frontend: wailsupdate.RuntimeFrontend{
+			CatalogURL:       cfg.FrontendCatalogURL,
+			CatalogPublicKey: cfg.FrontendCatalogPublicKey,
+		},
+		Client:      &http.Client{Timeout: 45 * time.Second},
+		BearerToken: cfg.Token,
 		DescribeState: func(state *wailsupdate.State) {
 			if state.Metadata == nil {
 				state.Metadata = map[string]string{}
@@ -97,8 +90,14 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 			}
 		},
 	})
+	if err != nil {
+		panic(err)
+	}
 
-	return &UpdateService{service: service, frontendManager: frontendManager}
+	return &UpdateService{
+		runtime: runtime,
+		service: runtime.Service(),
+	}
 }
 
 func (s *UpdateService) GetState() wailsupdate.State {
@@ -137,8 +136,8 @@ func (s *UpdateService) ResetFrontend() wailsupdate.ActionResponse {
 	return s.service.ResetFrontend()
 }
 
-func (s *UpdateService) FrontendManager() *frontend.BundleManager {
-	return s.frontendManager
+func (s *UpdateService) AssetFS(embedded fs.FS) fs.FS {
+	return s.runtime.AssetFS(embedded)
 }
 
 func (s *UpdateService) ServiceStartup(ctx context.Context, options application.ServiceOptions) error {

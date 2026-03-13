@@ -5,32 +5,41 @@ sidebar_position: 1
 
 # wailsrel
 
-`wailsrel` is for Wails consumer projects that need a release pipeline and an updater client.
+`wailsrel` helps you ship and update Wails apps.
 
-It covers:
+## What it is for
 
-- Wails-owned build hooks for one or more OS and architecture targets
-- protobuf-first release contracts with JSON twins
-- GitHub Releases as artifact storage plus an external HTTP server
-- optional frontend bundles and release channels
+Use it when you want a simple way to:
 
-## Pick a delivery model
+- build your app
+- publish a release
+- create update metadata
+- let the app download new versions
 
-- GitHub Releases: publish assets and indexes to a tagged release
-- Custom HTTP: expose `/manifest`, `/delta/manifest`, `/frontend/catalog`, and `/download/{tag}/{asset_name}` from your own server
-- Authenticated proxy: keep GitHub as storage and expose a token-protected or JWT-protected HTTP facade that reads the published indexes
+## What it can do
 
-## Standard flow
+- run your existing Wails build commands
+- collect installers and binaries
+- create manifests, indexes, and optional delta patches
+- publish to GitHub Releases
+- generate update files and URLs for your own HTTP endpoint
+- support optional frontend bundle updates
+
+## How it works
+
+1. You describe your app and build steps in `wailsrel.yaml`.
+2. `wailsrel` runs those steps and gathers the built files.
+3. It creates the files the updater needs.
+4. It publishes the assets and metadata, or prepares update files for your server setup.
+5. Your app points at the manifest URL and checks for updates.
+
+## Start here
 
 ```bash
 wailsrel init --name "MyApp" --identifier "com.example.myapp"
 wailsrel doctor
-wailsrel compat id
 wailsrel build
-wailsrel delta
 wailsrel release
-wailsrel index release
-wailsrel index frontend
 ```
 
-Use [Getting Started](./getting-started.md) to create the config, [CI and GitHub Actions](./ci.md) for release automation, [Client and Hosting](./github-pages.md) for native manifest delivery, [Server Contract](./server-contract.md) for the external server rules, and [Frontend Runtime](./frontend-runtime.md) for frontend `codepush` and `experiments`.
+Read [Getting Started](./getting-started.md) for setup, [CLI Commands](./commands.md) for the command list, and [Server Contract](./server-contract.md) if you are serving updates from your own backend.

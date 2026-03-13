@@ -14,21 +14,32 @@ The runtime precedence is:
 
 ## What clients need
 
-Your client app needs four pieces:
+Your client app needs three pieces:
 
-- a `frontend.BundleManager`
-- a `wailsupdate.Service` configured with `FrontendCatalogURL` and `FrontendCatalogPublicKey`
-- `frontend.NewRuntimeFS(...)` in the Wails asset handler
+- a `wailsupdate.Runtime`
+- `runtime.AssetFS(...)` in the Wails asset handler
 - a frontend listener for `update:frontend-reload-required` that calls `window.location.reload()`
 
-## Bundle manager
+## Preferred runtime bootstrap
 
-Create one `frontend.BundleManager` and reuse it for both the runtime asset handler and the updater service:
+Create one `wailsupdate.Runtime` and reuse it for both the updater service and asset serving:
 
 ```go
-frontendManager := &frontend.BundleManager{
-    AppID:        "com.example.myapp",
-    NativeCompat: nativeCompat,
+runtime, err := wailsupdate.NewRuntime(wailsupdate.RuntimeOptions{
+    AppID:          "com.example.myapp",
+    CurrentVersion: appVersion,
+    Channel:        "stable",
+    NativeCompat:   nativeCompat,
+    Source: wailsupdate.RuntimeSource{
+        BaseURL: "https://releases.example.com",
+    },
+    Frontend: wailsupdate.RuntimeFrontend{
+        CatalogPublicKey: os.Getenv("FRONTEND_CATALOG_PUBLIC_KEY"),
+    },
+    Client: &http.Client{Timeout: 45 * time.Second},
+})
+if err != nil {
+    return err
 }
 ```
 
@@ -36,45 +47,41 @@ frontendManager := &frontend.BundleManager{
 
 ## Runtime asset handler
 
-Replace the embedded-only asset handler:
+Replace the embedded-only asset handler with the runtime wrapper:
 
 ```go
 app := application.New(application.Options{
     Assets: application.AssetOptions{
-        Handler: application.AssetFileServerFS(frontend.NewRuntimeFS(frontendManager, assets)),
+        Handler: application.AssetFileServerFS(runtime.AssetFS(assets)),
     },
 })
 ```
 
-`frontend.NewRuntimeFS(...)` resolves requests against one consistent frontend layer per request, so concurrent installs and reloads do not mix files from different bundles.
+`runtime.AssetFS(...)` resolves requests against one consistent frontend layer per request, so concurrent installs and reloads do not mix files from different bundles.
 
 ## Updater service
 
-Configure the updater service with the pinned catalog URL and Ed25519 public key:
+Register the runtime-backed updater service:
 
 ```go
-client := &http.Client{Timeout: 45 * time.Second}
-
-service := wailsupdate.NewService(wailsupdate.Options{
-    ManifestURL:               "https://releases.example.com/manifest",
-    FrontendCatalogURL:        "https://proxy.example.com/frontend/catalog",
-    FrontendCatalogPublicKey:  os.Getenv("FRONTEND_CATALOG_PUBLIC_KEY"),
-    FrontendAutoCheck:         true,
-    CurrentVersion:            appVersion,
-    Channel:                   "stable",
-    NativeCompat:              nativeCompat,
-    TargetPath:                wailsupdate.DefaultTargetPath(),
-    TempDir:                   filepath.Join(os.TempDir(), "myapp-update"),
-    Client:                    client,
-    FrontendManager:           frontendManager,
+app := application.New(application.Options{
+    Services: []application.Service{
+        application.NewService(runtime.Service()),
+    },
 })
 ```
 
 Rules:
 
-- `FrontendCatalogURL` is pinned in the app config. Do not learn it from the native release manifest.
+- `FrontendCatalogURL` is pinned in app config. Do not learn it from the native release manifest.
 - The catalog URL must be HTTPS.
 - `FrontendCatalogPublicKey` must be the Ed25519 public key for the signed catalog response.
+- When `BaseURL` is set, `NewRuntime(...)` derives `/manifest` automatically and derives `/frontend/catalog` only when frontend runtime is enabled.
+- GitHub repository mode derives the native manifest URL, but frontend catalog URLs still need an explicit pinned override.
+
+## Advanced manual wiring
+
+`wailsupdate.NewService(...)` is still the low-level escape hatch when you need to wire the client, URLs, or `frontend.BundleManager` yourself.
 
 ## Register events
 
@@ -171,7 +178,7 @@ func (s *UpdateService) ResetFrontend() wailsupdate.ActionResponse {
 
 Clients expect:
 
-- `GET /frontend/catalog.json`
+- `GET /frontend/catalog`
 - HTTPS
 - a signed catalog response
 - codepush and experiment asset URLs already rewritten by the proxy if needed
@@ -194,8 +201,8 @@ The client runtime enforces:
 
 1. Pin `FrontendCatalogURL` in app config.
 2. Ship the Ed25519 catalog public key with the app.
-3. Create one shared `frontend.BundleManager`.
-4. Serve assets with `frontend.NewRuntimeFS(frontendManager, assets)`.
-5. Pass the same manager to `wailsupdate.NewService(...)`.
+3. Create one `wailsupdate.Runtime`.
+4. Serve assets with `runtime.AssetFS(assets)`.
+5. Register `runtime.Service()` with Wails.
 6. Expose the frontend service methods to the webview.
 7. Reload on `update:frontend-reload-required`.

@@ -1,6 +1,33 @@
 # wailsrel
 
-`wailsrel` orchestrates releases and updates for Wails v3 applications.
+`wailsrel` is a release and update tool for Wails apps.
+
+## What it is for
+
+Use it when you want one tool to:
+
+- build your app
+- publish releases
+- create update files
+- help the app download new versions
+
+## What it can do
+
+- run your existing Wails build commands
+- collect the installers and binaries those builds produce
+- generate manifests, indexes, and optional delta patches
+- publish releases to GitHub Releases
+- generate update files and URLs for your own HTTP server
+- support optional frontend bundle updates
+- provide Go packages for updater integration in the app
+
+## How it works
+
+1. You add a `wailsrel.yaml` file with your app details, build steps, and release destination.
+2. `wailsrel` runs your build steps and finds the output files.
+3. It creates the metadata needed for updates.
+4. It publishes the release assets and metadata, or prepares update files for your server setup.
+5. Your app reads the manifest URL and checks for updates.
 
 ## Install
 
@@ -8,30 +35,14 @@
 go install github.com/Eriyc/wailsrel/cmd/wailsrel@latest
 ```
 
-## Consumer flow
-
-1. Scaffold `wailsrel.yaml`.
-2. Configure Wails-owned build hooks, artifact discovery, and release hosting.
-3. Publish `manifest.json/.pb`, `delta-manifest.json/.pb`, `release-index.json/.pb`, and `frontend-index.json/.pb` from CI.
-4. Run an external HTTP server that reads those published artifacts and serves `/manifest`, `/delta/manifest`, `/frontend/catalog`, and `/download/:tag/:asset_name`.
-5. Use `pkg/update`, `pkg/wailsupdate`, and optional `pkg/frontend` in the client app.
+## Basic flow
 
 ```bash
 wailsrel init --name "MyApp" --identifier "com.example.myapp"
 wailsrel doctor
-wailsrel compat id
 wailsrel build
-wailsrel delta
 wailsrel release
-wailsrel index release
-wailsrel index frontend
 ```
-
-## Required inputs
-
-- GitHub publishing: `GITHUB_TOKEN`
-- Native signing credentials and platform packaging config: managed by your Wails project and its `build/` tooling
-- HTTP or authenticated delivery: an external server that rewrites published index artifacts into `/manifest`, `/delta/manifest`, `/frontend/catalog`, and `/download/...`
 
 ## Docs
 

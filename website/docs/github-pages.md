@@ -62,9 +62,39 @@ bun run index.ts
 
 That server should expose `/manifest`, `/delta/manifest`, `/frontend/catalog`, `/download/...`, and any auth/health routes you need.
 
-## Native updater integration
+## Preferred Wails integration
 
-Use `pkg/update` in your Wails app:
+Prefer `wailsupdate.NewRuntime(...)` in Wails apps:
+
+```go
+runtime, err := wailsupdate.NewRuntime(wailsupdate.RuntimeOptions{
+    AppID:          "com.example.myapp",
+    CurrentVersion: appVersion,
+    Channel:        "stable",
+    NativeCompat:   nativeCompat,
+    Source: wailsupdate.RuntimeSource{
+        BaseURL: "https://releases.example.com",
+    },
+    Frontend: wailsupdate.RuntimeFrontend{
+        CatalogPublicKey: os.Getenv("FRONTEND_CATALOG_PUBLIC_KEY"),
+    },
+    Client: &http.Client{Timeout: 45 * time.Second},
+})
+if err != nil {
+    return err
+}
+```
+
+That gives you:
+
+- `runtime.Service()` for Wails service registration
+- `runtime.AssetFS(assets)` for layered embedded/codepush assets
+- derived `/manifest` when you supply `BaseURL`
+- derived GitHub latest `manifest.json` when you supply `Repository`
+
+## Advanced native updater integration
+
+Use `pkg/update` directly when you need lower-level control:
 
 ```go
 client := &http.Client{Timeout: 45 * time.Second}
@@ -74,18 +104,6 @@ applier := update.NewApplier(update.ApplierOptions{
     Client:     client,
     TargetPath: targetPath,
     TempDir:    filepath.Join(os.TempDir(), "myapp-update"),
-})
-
-manager := update.NewManager(update.ManagerOpts{
-    Checker: checker,
-    Applier: applier,
-    CheckOpts: update.CheckOpts{
-        CurrentVersion: appVersion,
-        CurrentHash:    currentHash,
-        Channel:        "stable",
-        NativeCompat:   "1",
-        ManifestURL:    "https://releases.example.com/manifest",
-    },
 })
 ```
 
@@ -99,8 +117,8 @@ Clients need:
 
 - a pinned `FrontendCatalogURL`
 - an Ed25519 `FrontendCatalogPublicKey`
-- a shared `frontend.BundleManager`
-- `frontend.NewRuntimeFS(...)` in the Wails asset handler
+- a shared runtime created with `wailsupdate.NewRuntime(...)`
+- `runtime.AssetFS(...)` in the Wails asset handler
 - a listener for `update:frontend-reload-required`
 
 Use [Frontend Runtime](./frontend-runtime.md) for the complete client integration.

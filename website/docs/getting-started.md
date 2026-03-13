@@ -4,12 +4,11 @@ sidebar_position: 2
 
 # Getting Started
 
-## Prerequisites
+## What you need
 
 - Go 1.25 or newer
 - a Wails v3 project
-- Git tags available locally if `version.source: git`
-- the native packaging and signing tools required by your Wails build hooks
+- your normal Wails build tools and signing setup
 
 ## Install
 
@@ -17,15 +16,19 @@ sidebar_position: 2
 go install github.com/Eriyc/wailsrel/cmd/wailsrel@latest
 ```
 
-## Scaffold the config
+## Create the config
 
 ```bash
 wailsrel init --name "MyApp" --identifier "com.example.myapp"
 ```
 
-`wailsrel init` creates a schema 2 `wailsrel.yaml`. Adjust the generated Wails task hooks and artifact paths to match your project.
+This creates a `wailsrel.yaml` file. Edit it to tell `wailsrel`:
 
-## Minimal GitHub Releases config
+- how to build your app
+- which output files to pick up
+- where updates should be served from
+
+## Simple config example
 
 ```yaml
 schema: 2
@@ -66,34 +69,65 @@ release:
     repository: "acme/myapp"
 ```
 
-Use `version.source: file` and set `version.file` if you do not want to derive versions from Git tags.
+This example says:
 
-## Validate the environment
+- build a Linux release
+- look for the generated package files in `bin/`
+- create update metadata
+- publish the release to GitHub
+
+If you do not want to read versions from Git tags, use `version.source: file` instead.
+
+## How the app gets updates
+
+Your app needs a manifest URL. The updater runtime reads that URL, checks for a newer version, and downloads the right file for the current platform.
+
+Use `wailsupdate.NewRuntime(...)` in the app:
+
+```go
+runtime, err := wailsupdate.NewRuntime(wailsupdate.RuntimeOptions{
+    AppID:          "com.example.myapp",
+    CurrentVersion: appVersion,
+    Channel:        "stable",
+    NativeCompat:   nativeCompat,
+    Source: wailsupdate.RuntimeSource{
+        BaseURL: "https://releases.example.com",
+    },
+    Frontend: wailsupdate.RuntimeFrontend{
+        CatalogPublicKey: os.Getenv("FRONTEND_CATALOG_PUBLIC_KEY"),
+    },
+})
+if err != nil {
+    return err
+}
+```
+
+That gives the app a simple way to check for updates.
+
+## Check your setup
 
 ```bash
 wailsrel status
 wailsrel doctor
 ```
 
-`doctor` checks the toolchain required by your configured build hooks and release provider.
+`doctor` checks that the tools required by your config are installed.
 
-## Build and publish
+## Build and release
 
 ```bash
 wailsrel build
-wailsrel delta
 wailsrel release
-wailsrel index release
-wailsrel index frontend
 ```
 
-- `build` runs your configured Wails-owned build hooks and stages the discovered artifacts in `dist/`
-- `delta` generates patch files and a delta manifest when `delta.enabled: true`
-- `release` runs the full pipeline and publishes assets according to `release.provider`
+- `build` runs your configured build commands and collects the output files
+- `release` runs the full pipeline and publishes the result
 
-## Switch to custom HTTP hosting
+If delta updates are enabled, `wailsrel` creates patch files during the release flow.
 
-If you serve releases from your own domain, change the release and update sections:
+## If you use your own server
+
+If you do not want GitHub Releases as the public update endpoint, point `wailsrel` at your own server:
 
 ```yaml
 update:
@@ -108,11 +142,11 @@ release:
     download_path_prefix: "/download"
 ```
 
-That setup expects your server to expose:
+Your server should expose:
 
 - `GET /manifest`
 - `GET /delta/manifest`
 - `GET /frontend/catalog`
 - `GET /download/{tag}/{asset_name}`
 
-Use [Client and Hosting](./github-pages.md) for native manifest delivery, [Server Contract](./server-contract.md) for the external server rules, and [Frontend Runtime](./frontend-runtime.md) for client-side `codepush` and `experiments` integration.
+Use [Server Contract](./server-contract.md) for the exact rules, [Client and Hosting](./github-pages.md) for hosting options, and [Frontend Runtime](./frontend-runtime.md) if you also want frontend bundle updates.

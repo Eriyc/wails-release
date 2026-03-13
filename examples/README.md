@@ -3,6 +3,7 @@
 Use these examples to validate the two supported delivery models:
 
 - `github-releases-app`: consume public release artifacts directly from a public `/manifest` endpoint.
+- `minimal-release-server`: smallest possible HTTP server for native update clients.
 - `authenticated-http-app` plus `authenticated-release-proxy`: consume updates from an HTTP server that serves either JSON or protobuf and proxies asset downloads.
 
 ## GitHub Releases Example
@@ -20,6 +21,8 @@ Use `wails3 build` when you want a packaged binary for testing full replace-and-
 Optional overrides:
 
 - `EXAMPLE_GITHUB_MANIFEST_URL`
+- `EXAMPLE_FRONTEND_CATALOG_URL`
+- `EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY`
 - `EXAMPLE_UPDATE_CHANNEL`
 - `EXAMPLE_NATIVE_COMPAT`
 - `EXAMPLE_TARGET_PATH`
@@ -28,7 +31,31 @@ Optional overrides:
 If `EXAMPLE_GITHUB_MANIFEST_URL` is unset, the app derives:
 
 ```text
-https://releases.example.com/manifest
+https://github.com/owner/repo/releases/latest/download/manifest.json
+```
+
+Frontend runtime stays embedded unless you also pin a frontend catalog URL and public key.
+
+## Minimal HTTP Server
+
+From `examples/minimal-release-server`:
+
+```bash
+export GITHUB_REPOSITORY=owner/repo
+bun run index.js
+```
+
+This example is intentionally small:
+
+- native updates only
+- JSON responses only
+- no auth
+- no frontend catalog
+
+Point the client at:
+
+```text
+http://127.0.0.1:8788/manifest
 ```
 
 ## HTTP Server Example
@@ -47,12 +74,18 @@ Use `wails3 build` when you want a packaged binary for testing full replace-and-
 Optional overrides:
 
 - `EXAMPLE_PROXY_MANIFEST_URL`
+- `EXAMPLE_FRONTEND_CATALOG_URL`
+- `EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY`
 - `EXAMPLE_UPDATE_CHANNEL`
 - `EXAMPLE_NATIVE_COMPAT`
 - `EXAMPLE_TARGET_PATH`
 - `EXAMPLE_TEMP_DIR`
 
-## Bun HTTP Server
+If `EXAMPLE_PROXY_MANIFEST_URL` is unset, the app derives `EXAMPLE_PROXY_BASE_URL + "/manifest"`.
+
+Frontend runtime stays embedded unless you also pin a frontend catalog public key. When enabled, the app derives `EXAMPLE_PROXY_BASE_URL + "/frontend/catalog"` unless `EXAMPLE_FRONTEND_CATALOG_URL` is set.
+
+## Authenticated Bun HTTP Server
 
 From `examples/authenticated-release-proxy`:
 
