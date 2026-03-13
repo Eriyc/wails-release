@@ -1,0 +1,5 @@
+dist/
+.wailsrel/
+
+.direnv
+plan.md
