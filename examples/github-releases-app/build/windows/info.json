@@ -1,0 +1,15 @@
+{
+	"fixed": {
+		"file_version": "0.1.0"
+	},
+	"info": {
+		"0000": {
+			"ProductVersion": "0.1.0",
+			"CompanyName": "wailsrel",
+			"FileDescription": "Wails updater example using GitHub Releases directly",
+			"LegalCopyright": "© 2026 wailsrel",
+			"ProductName": "GitHub Releases Example",
+			"Comments": "Generated with wails3 init for the wailsrel examples"
+		}
+	}
+}

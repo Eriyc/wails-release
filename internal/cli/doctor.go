@@ -1,13 +1,13 @@
 package cli
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"github.com/Eriyc/wailsrel/pkg/build"
-	"github.com/Eriyc/wailsrel/pkg/sign"
 	"github.com/spf13/cobra"
 )
 
@@ -27,53 +27,35 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 		Use:   "doctor",
 		Short: "Check local dependencies for configured targets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			toolNames := []string{"go", "git"}
+			checks := []doctorCheck{
+				lookup("go"),
+				lookup("git"),
+			}
 
-			cfg, _, err := loadConfig(opts)
+			cfg, configPath, err := loadConfig(opts)
 			if err == nil {
+				projectDir := filepath.Dir(configPath)
+				seen := map[string]struct{}{
+					"go":  {},
+					"git": {},
+				}
 				for _, target := range build.ExpandMatrix(cfg.Targets) {
 					for _, tool := range build.RequiredTools(target) {
-						toolNames = append(toolNames, tool)
+						if _, ok := seen[tool]; ok {
+							continue
+						}
+						seen[tool] = struct{}{}
+						checks = append(checks, lookup(tool))
 					}
-				}
-			}
-
-			checks := make([]doctorCheck, 0, len(toolNames))
-			seen := make(map[string]struct{}, len(toolNames))
-			for _, name := range toolNames {
-				if _, ok := seen[name]; ok {
-					continue
-				}
-				seen[name] = struct{}{}
-				checks = append(checks, lookup(name))
-			}
-			if err == nil {
-				seenSigning := make(map[string]struct{})
-				for _, target := range build.ExpandMatrix(cfg.Targets) {
-					key := target.OS + "/" + target.Sign.Provider
-					if _, ok := seenSigning[key]; ok {
+					if len(target.Build.Argv) == 0 {
+						checks = append(checks, doctorCheck{Name: target.ID, Message: "build argv is empty"})
 						continue
 					}
-					seenSigning[key] = struct{}{}
-
-					signer, signErr := sign.NewSigner(target.Sign)
-					if signErr != nil {
-						checks = append(checks, doctorCheck{
-							Name:    "sign " + key,
-							Message: signErr.Error(),
-						})
+					if err := validateDoctorTarget(projectDir, target); err != nil {
+						checks = append(checks, doctorCheck{Name: target.ID, Message: err.Error()})
 						continue
 					}
-
-					check := doctorCheck{
-						Name:  "sign " + key,
-						Found: true,
-					}
-					if availErr := signer.Available(context.Background()); availErr != nil {
-						check.Found = false
-						check.Message = availErr.Error()
-					}
-					checks = append(checks, check)
+					checks = append(checks, doctorCheck{Name: target.ID, Found: true})
 				}
 			}
 
@@ -89,7 +71,7 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 						state = "missing"
 					}
 					if check.Message != "" {
-						state = state + " (" + check.Message + ")"
+						state += " (" + check.Message + ")"
 					}
 					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%-20s %s\n", check.Name, state); err != nil {
 						return err
@@ -102,10 +84,38 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 					return errors.New("one or more required dependencies are missing")
 				}
 			}
-
 			return nil
 		},
 	}
+}
+
+func validateDoctorTarget(projectDir string, target build.Target) error {
+	if len(target.Build.Argv) == 0 || strings.TrimSpace(target.Build.Argv[0]) == "" {
+		return fmt.Errorf("build.argv must not be empty")
+	}
+	if strings.TrimSpace(target.Build.Workdir) != "" {
+		workdir := target.Build.Workdir
+		if !filepath.IsAbs(workdir) {
+			workdir = filepath.Join(projectDir, workdir)
+		}
+		if _, err := exec.LookPath(target.Build.Argv[0]); err != nil {
+			return err
+		}
+		if _, err := filepath.Abs(workdir); err != nil {
+			return err
+		}
+	}
+	for i, artifact := range target.Artifacts {
+		pathSet := strings.TrimSpace(artifact.Path) != ""
+		globSet := strings.TrimSpace(artifact.Glob) != ""
+		switch {
+		case pathSet && globSet:
+			return fmt.Errorf("artifact %d has both path and glob", i)
+		case !pathSet && !globSet:
+			return fmt.Errorf("artifact %d requires path or glob", i)
+		}
+	}
+	return nil
 }
 
 func lookup(name string) doctorCheck {
@@ -113,6 +123,5 @@ func lookup(name string) doctorCheck {
 	if err != nil {
 		return doctorCheck{Name: name}
 	}
-
 	return doctorCheck{Name: name, Found: true, Path: path}
 }

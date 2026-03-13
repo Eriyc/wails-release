@@ -13,21 +13,17 @@ var (
 	validVersionSources   = []string{"git", "file"}
 	validTargetOS         = []string{"darwin", "windows", "linux"}
 	validArch             = []string{"amd64", "arm64"}
-	validSignProviders    = []string{"", "none", "apple", "apple-rcodesign", "azure"}
-	validOutputFormats    = []string{"app", "dmg", "exe", "nsis", "appimage", "deb", "rpm", "binary", "zip"}
 	validArtifactSource   = []string{"github-release", "local-cache", "url"}
 	validReleaseProviders = []string{"github", "http"}
 	validCIProviders      = []string{"github"}
 )
 
-var validSignProvidersByOS = map[string][]string{
-	"darwin":  {"", "none", "apple", "apple-rcodesign"},
-	"windows": {"", "none", "azure"},
-	"linux":   {"", "none"},
-}
-
 func (c *Config) Validate() []ValidationError {
 	var errs []ValidationError
+
+	if c.Schema != 2 {
+		errs = append(errs, ValidationError{Field: "schema", Message: "must be 2", Fatal: true})
+	}
 
 	if strings.TrimSpace(c.App.Name) == "" {
 		errs = append(errs, ValidationError{Field: "app.name", Message: "must not be empty", Fatal: true})
@@ -49,61 +45,34 @@ func (c *Config) Validate() []ValidationError {
 
 	for i, target := range c.Targets {
 		prefix := "targets[" + strconv.Itoa(i) + "]"
-
+		if strings.TrimSpace(target.ID) == "" {
+			errs = append(errs, ValidationError{Field: prefix + ".id", Message: "must not be empty", Fatal: true})
+		}
 		if !slices.Contains(validTargetOS, target.OS) {
 			errs = append(errs, ValidationError{Field: prefix + ".os", Message: "unsupported target OS", Fatal: true})
 		}
-		if len(target.Arch) == 0 {
-			errs = append(errs, ValidationError{Field: prefix + ".arch", Message: "at least one architecture is required", Fatal: true})
+		if !slices.Contains(validArch, target.Arch) {
+			errs = append(errs, ValidationError{Field: prefix + ".arch", Message: "unsupported architecture " + target.Arch, Fatal: true})
 		}
-		for _, arch := range target.Arch {
-			if !slices.Contains(validArch, arch) {
-				errs = append(errs, ValidationError{Field: prefix + ".arch", Message: "unsupported architecture " + arch, Fatal: true})
-			}
+		if len(target.Build.Argv) == 0 {
+			errs = append(errs, ValidationError{Field: prefix + ".build.argv", Message: "must not be empty", Fatal: true})
 		}
-		if len(target.OutputFormats) == 0 {
-			errs = append(errs, ValidationError{Field: prefix + ".output_formats", Message: "at least one output format is required", Fatal: true})
+		if len(target.Artifacts) == 0 {
+			errs = append(errs, ValidationError{Field: prefix + ".artifacts", Message: "at least one artifact is required", Fatal: true})
 		}
-		for _, format := range target.OutputFormats {
-			if !slices.Contains(validOutputFormats, format) {
-				errs = append(errs, ValidationError{Field: prefix + ".output_formats", Message: "unsupported output format " + format, Fatal: true})
+
+		for j, artifact := range target.Artifacts {
+			artifactPrefix := prefix + ".artifacts[" + strconv.Itoa(j) + "]"
+			if strings.TrimSpace(artifact.Format) == "" {
+				errs = append(errs, ValidationError{Field: artifactPrefix + ".format", Message: "must not be empty", Fatal: true})
 			}
-		}
-		if !slices.Contains(validSignProviders, target.Sign.Provider) {
-			errs = append(errs, ValidationError{Field: prefix + ".sign.provider", Message: "unsupported signing provider", Fatal: true})
-		}
-		if allowed := validSignProvidersByOS[target.OS]; len(allowed) > 0 && !slices.Contains(allowed, target.Sign.Provider) {
-			errs = append(errs, ValidationError{Field: prefix + ".sign.provider", Message: "signing provider is not supported for target OS " + target.OS, Fatal: true})
-		}
-		switch target.Sign.Provider {
-		case "apple":
-			if strings.TrimSpace(target.Sign.Identity) == "" {
-				errs = append(errs, ValidationError{Field: prefix + ".sign.identity", Message: "must be set when sign.provider=apple", Fatal: true})
-			}
-			if target.Sign.Notarize {
-				if strings.TrimSpace(target.Sign.AppleID) == "" {
-					errs = append(errs, ValidationError{Field: prefix + ".sign.apple_id", Message: "must be set when notarization is enabled", Fatal: true})
-				}
-				if strings.TrimSpace(target.Sign.Password) == "" {
-					errs = append(errs, ValidationError{Field: prefix + ".sign.password", Message: "must be set when notarization is enabled", Fatal: true})
-				}
-				if strings.TrimSpace(target.Sign.TeamID) == "" {
-					errs = append(errs, ValidationError{Field: prefix + ".sign.team_id", Message: "must be set when notarization is enabled", Fatal: true})
-				}
-			}
-		case "apple-rcodesign":
-			if strings.TrimSpace(target.Sign.Identity) == "" {
-				errs = append(errs, ValidationError{Field: prefix + ".sign.identity", Message: "must point to a PKCS#12 bundle or certificate file when sign.provider=apple-rcodesign", Fatal: true})
-			}
-		case "azure":
-			if strings.TrimSpace(target.Sign.Endpoint) == "" {
-				errs = append(errs, ValidationError{Field: prefix + ".sign.endpoint", Message: "must be set when sign.provider=azure", Fatal: true})
-			}
-			if strings.TrimSpace(target.Sign.Account) == "" {
-				errs = append(errs, ValidationError{Field: prefix + ".sign.account", Message: "must be set when sign.provider=azure", Fatal: true})
-			}
-			if strings.TrimSpace(target.Sign.Profile) == "" {
-				errs = append(errs, ValidationError{Field: prefix + ".sign.profile", Message: "must be set when sign.provider=azure", Fatal: true})
+			pathSet := strings.TrimSpace(artifact.Path) != ""
+			globSet := strings.TrimSpace(artifact.Glob) != ""
+			switch {
+			case pathSet && globSet:
+				errs = append(errs, ValidationError{Field: artifactPrefix, Message: "path and glob are mutually exclusive", Fatal: true})
+			case !pathSet && !globSet:
+				errs = append(errs, ValidationError{Field: artifactPrefix, Message: "either path or glob is required", Fatal: true})
 			}
 		}
 	}
@@ -136,7 +105,7 @@ func (c *Config) Validate() []ValidationError {
 		if c.Frontend.CompatVersion <= 0 {
 			errs = append(errs, ValidationError{Field: "frontend.compat_version", Message: "must be greater than zero", Fatal: true})
 		}
-		if strings.TrimSpace(c.Frontend.BindingsDir) == "" {
+		if c.Frontend.CompatAutoCheck && strings.TrimSpace(c.Frontend.BindingsDir) == "" {
 			errs = append(errs, ValidationError{Field: "frontend.bindings_dir", Message: "must not be empty", Fatal: true})
 		}
 		if strings.TrimSpace(c.Frontend.BuildDir) == "" {

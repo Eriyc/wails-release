@@ -105,9 +105,11 @@ func parseGitHubRepository(remote string) (string, error) {
 }
 
 func deltaOptions(projectDir string, cfg *config.Config, repository string) delta.Options {
+	outputDir := projectOutputDir(projectDir, cfg)
 	return delta.Options{
-		OutputDir:        projectOutputDir(projectDir, cfg),
+		OutputDir:        outputDir,
 		CacheDir:         projectCacheDir(projectDir, cfg),
+		Artifacts:        deltaArtifactPaths(outputDir),
 		FromVersions:     cfg.Delta.FromVersions,
 		Source:           cfg.Delta.OldArtifacts.Source,
 		TagPrefix:        cfg.Version.TagPrefix,
@@ -116,6 +118,20 @@ func deltaOptions(projectDir string, cfg *config.Config, repository string) delt
 		AuthToken:        os.Getenv(strings.TrimSpace(cfg.Delta.OldArtifacts.AuthTokenEnv)),
 		GitHubAPIBaseURL: cfg.Release.GitHub.APIBaseURL,
 	}
+}
+
+func deltaArtifactPaths(outputDir string) []string {
+	artifacts, err := readArtifactMetadata(outputDir)
+	if err != nil {
+		return nil
+	}
+	paths := make([]string, 0, len(artifacts))
+	for _, artifact := range artifacts {
+		if artifact.EnableDelta {
+			paths = append(paths, artifact.Path)
+		}
+	}
+	return paths
 }
 
 func resolvedDeltaManifestURL(cfg *config.Config) string {

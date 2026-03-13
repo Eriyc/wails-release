@@ -14,8 +14,12 @@ import (
 )
 
 type initData struct {
-	AppName    string
-	Identifier string
+	AppName              string
+	Identifier           string
+	HasDarwinTaskfile    bool
+	HasWindowsTaskfile   bool
+	HasLinuxTaskfile     bool
+	HasDetectedTaskfiles bool
 }
 
 func newInitCmd(opts *Options) *cobra.Command {
@@ -62,9 +66,14 @@ func newInitCmd(opts *Options) *cobra.Command {
 			}
 
 			var buf bytes.Buffer
+			taskfiles := detectWailsTaskfiles(filepath.Dir(absPath))
 			if err := tmpl.Execute(&buf, initData{
-				AppName:    appName,
-				Identifier: identifier,
+				AppName:              appName,
+				Identifier:           identifier,
+				HasDarwinTaskfile:    taskfiles["darwin"],
+				HasWindowsTaskfile:   taskfiles["windows"],
+				HasLinuxTaskfile:     taskfiles["linux"],
+				HasDetectedTaskfiles: taskfiles["darwin"] || taskfiles["windows"] || taskfiles["linux"],
 			}); err != nil {
 				return err
 			}
@@ -105,4 +114,17 @@ func slug(s string) string {
 	s = strings.ReplaceAll(s, " ", "")
 	s = strings.ReplaceAll(s, "_", "")
 	return strings.ReplaceAll(s, "-", "")
+}
+
+func detectWailsTaskfiles(root string) map[string]bool {
+	result := map[string]bool{
+		"darwin":  false,
+		"windows": false,
+		"linux":   false,
+	}
+	for platform := range result {
+		_, err := os.Stat(filepath.Join(root, "build", platform, "Taskfile.yml"))
+		result[platform] = err == nil
+	}
+	return result
 }

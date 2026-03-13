@@ -7,6 +7,9 @@ func DefaultConfig() *Config {
 }
 
 func (c *Config) applyDefaults() {
+	if c.Schema == 0 {
+		c.Schema = 2
+	}
 	if c.Version.Source == "" {
 		c.Version.Source = "git"
 	}
@@ -98,16 +101,35 @@ func (c *Config) applyDefaults() {
 		c.CI.Artifacts.RetentionDays = 90
 	}
 
-	if c.Installers.DMG.IconSize == 0 {
-		c.Installers.DMG.IconSize = 80
+	for i := range c.Targets {
+		target := &c.Targets[i]
+		if target.ID == "" && target.OS != "" && target.Arch != "" {
+			target.ID = target.OS + "-" + target.Arch
+		}
+		if target.Build.Workdir == "" {
+			target.Build.Workdir = "."
+		}
+		for j := range target.Artifacts {
+			artifact := &target.Artifacts[j]
+			includeInManifest := artifact.IncludeInManifest
+			if includeInManifest == nil {
+				defaultValue := defaultManifestArtifactFormat(artifact.Format)
+				artifact.IncludeInManifest = &defaultValue
+				includeInManifest = artifact.IncludeInManifest
+			}
+			if artifact.EnableDelta == nil {
+				defaultValue := includeInManifest != nil && *includeInManifest
+				artifact.EnableDelta = &defaultValue
+			}
+		}
 	}
-	if len(c.Installers.DMG.WindowSize) == 0 {
-		c.Installers.DMG.WindowSize = []int{600, 400}
-	}
-	if c.Installers.Deb.Section == "" {
-		c.Installers.Deb.Section = "utils"
-	}
-	if c.Installers.Deb.Priority == "" {
-		c.Installers.Deb.Priority = "optional"
+}
+
+func defaultManifestArtifactFormat(format string) bool {
+	switch format {
+	case "app", "dmg", "exe", "nsis", "appimage", "deb", "rpm", "binary", "zip":
+		return true
+	default:
+		return false
 	}
 }

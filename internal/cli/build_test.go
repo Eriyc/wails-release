@@ -14,6 +14,7 @@ func TestBuildDryRunWarnsOnCompatMismatch(t *testing.T) {
 	repo := t.TempDir()
 	configPath := filepath.Join(repo, "wailsrel.yaml")
 	if err := os.WriteFile(configPath, []byte(`
+schema: 2
 app:
   name: "MyApp"
   identifier: "com.example.myapp"
@@ -21,11 +22,14 @@ version:
   source: file
   file: "VERSION"
 targets:
-  - os: linux
-    arch: [amd64]
-    output_formats: [binary]
-    sign:
-      provider: none
+  - id: linux-amd64
+    os: linux
+    arch: amd64
+    build:
+      argv: ["task", "build"]
+    artifacts:
+      - format: binary
+        path: "bin/MyApp"
 frontend:
   enabled: true
   compat_version: 1

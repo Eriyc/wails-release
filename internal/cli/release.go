@@ -233,11 +233,16 @@ func executeReleaseBuild(ctx context.Context, projectDir string, cfg *config.Con
 	if err != nil {
 		return nil, err
 	}
+	tag, versionText, err := resolveReleaseVersion(ctx, projectDir, cfg)
+	if err != nil {
+		return nil, err
+	}
 	builder := build.NewBuilder(build.Options{
 		ProjectDir: projectDir,
 		OutputDir:  outputDir,
 		AppName:    cfg.App.Name,
-		Installers: cfg.Installers,
+		Version:    versionText,
+		Tag:        tag,
 		Timeout:    timeout,
 	})
 
@@ -252,6 +257,9 @@ func executeReleaseBuild(ctx context.Context, projectDir string, cfg *config.Con
 			return nil, fmt.Errorf("build %s/%s: %w", target.OS, target.Arch, err)
 		}
 		artifacts = append(artifacts, result.Artifacts...)
+	}
+	if err := writeArtifactMetadata(outputDir, artifacts); err != nil {
+		return nil, err
 	}
 	return artifacts, nil
 }

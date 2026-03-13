@@ -18,7 +18,7 @@ Use `--force` to overwrite an existing file.
 
 ## `status`
 
-Print the resolved config path, app identifier, target count, frontend channels, and output directory:
+Print the resolved config path, app identifier, target hooks, frontend channels, and output directory:
 
 ```bash
 wailsrel status
@@ -26,7 +26,7 @@ wailsrel status
 
 ## `doctor`
 
-Validate the local toolchain and signing setup for the configured targets:
+Validate the local toolchain and configured build hook requirements:
 
 ```bash
 wailsrel doctor
@@ -48,24 +48,13 @@ Valid bump types are `patch`, `minor`, `major`, and `pre`.
 
 ## `build`
 
-Build all configured native targets:
+Run the configured Wails-owned build hooks and stage discovered artifacts:
 
 ```bash
 wailsrel build
 ```
 
-Use `--dry-run` to print the target matrix without building.
-
-## `sign <path>`
-
-Sign one artifact with the signing configuration that matches the target OS:
-
-```bash
-wailsrel sign dist/MyApp.dmg
-wailsrel sign --os windows --provider azure dist/MyApp.exe
-```
-
-OS is inferred from the file extension unless you override it.
+Use `--dry-run` to print the target hook matrix without building.
 
 ## `delta`
 
@@ -109,7 +98,7 @@ Run the full release pipeline:
 wailsrel release
 ```
 
-`release` builds native artifacts, builds frontend bundles, generates delta patches, creates manifests, and publishes assets through the configured release provider.
+`release` runs configured build hooks, stages artifacts, builds frontend bundles, generates delta patches, creates manifests, and publishes assets through the configured release provider.
 
 ## Global flags
 

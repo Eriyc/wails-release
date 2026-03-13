@@ -7,7 +7,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-//go:embed all:assets
+//go:embed all:frontend/dist
 var assets embed.FS
 
 func init() {
@@ -26,7 +26,7 @@ func main() {
 			application.NewService(service),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.BundledAssetFileServer(assets),
+			Handler: application.AssetFileServerFS(assets),
 		},
 		Mac: application.MacOptions{
 			ApplicationShouldTerminateAfterLastWindowClosed: true,

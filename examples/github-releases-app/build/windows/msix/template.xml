@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<MsixPackagingToolTemplate
+    xmlns="http://schemas.microsoft.com/msix/packaging/msixpackagingtool/template/2022">
+    <Settings
+        AllowTelemetry="false"
+        ApplyACLsToPackageFiles="true"
+        GenerateCommandLineFile="true"
+        AllowPromptForPassword="false">
+    </Settings>
+    <Installer
+        Path="github-releases-app"
+        Arguments=""
+        InstallLocation="C:\Program Files\wailsrel\GitHub Releases Example">
+    </Installer>
+    <PackageInformation
+        PackageName="GitHub Releases Example"
+        PackageDisplayName="GitHub Releases Example"
+        PublisherName="CN=wailsrel"
+        PublisherDisplayName="wailsrel"
+        Version="0.1.0.0"
+        PackageDescription="Wails updater example using GitHub Releases directly">
+        <Capabilities>
+            <Capability Name="runFullTrust" />
+            
+        </Capabilities>
+        <Applications>
+            <Application
+                Id="com.example.wailsrel.githubreleasesapp"
+                Description="Wails updater example using GitHub Releases directly"
+                DisplayName="GitHub Releases Example"
+                ExecutableName="github-releases-app"
+                EntryPoint="Windows.FullTrustApplication">
+                
+            </Application>
+        </Applications>
+        <Resources>
+            <Resource Language="en-us" />
+        </Resources>
+        <Dependencies>
+            <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.19041.0" />
+        </Dependencies>
+        <Properties>
+            <Framework>false</Framework>
+            <DisplayName>GitHub Releases Example</DisplayName>
+            <PublisherDisplayName>wailsrel</PublisherDisplayName>
+            <Description>Wails updater example using GitHub Releases directly</Description>
+            <Logo>Assets\AppIcon.png</Logo>
+        </Properties>
+    </PackageInformation>
+    <SaveLocation PackagePath="github-releases-app.msix" />
+    <PackageIntegrity>
+        <CertificatePath></CertificatePath>
+    </PackageIntegrity>
+</MsixPackagingToolTemplate>

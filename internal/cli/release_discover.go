@@ -13,6 +13,10 @@ import (
 )
 
 func discoverReleaseArtifacts(outputDir string) ([]build.Artifact, error) {
+	if artifacts, err := readArtifactMetadata(outputDir); err == nil {
+		return artifacts, nil
+	}
+
 	entries := make([]build.Artifact, 0)
 	seen := make(map[string]struct{})
 
@@ -66,13 +70,15 @@ func discoverReleaseArtifacts(outputDir string) ([]build.Artifact, error) {
 		}
 
 		entries = append(entries, build.Artifact{
-			Path:     logicalPath,
-			OS:       parts[0],
-			Arch:     parts[1],
-			Format:   inferArtifactFormat(path, info.IsDir()),
-			Checksum: "sha256:" + checksum,
-			Size:     size,
-			Metadata: map[string]string{},
+			Path:              logicalPath,
+			OS:                parts[0],
+			Arch:              parts[1],
+			Format:            inferArtifactFormat(path, info.IsDir()),
+			Checksum:          "sha256:" + checksum,
+			Size:              size,
+			Metadata:          map[string]string{},
+			IncludeInManifest: true,
+			EnableDelta:       true,
 		})
 		seen[rootKey] = struct{}{}
 		if info.IsDir() {

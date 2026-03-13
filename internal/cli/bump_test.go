@@ -145,13 +145,19 @@ func newCLITestRepo(t *testing.T) (string, string) {
 
 func testConfig() string {
 	return `
+schema: 2
 app:
   name: "Test App"
   identifier: "com.example.test"
 targets:
-  - os: darwin
-    arch: [amd64]
-    output_formats: [app]
+  - id: darwin-amd64
+    os: darwin
+    arch: amd64
+    build:
+      argv: ["task", "build"]
+    artifacts:
+      - format: app
+        path: "bin/Test App.app"
 `
 }
 

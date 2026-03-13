@@ -1,0 +1,9 @@
+[general]
+ignore=B6
+
+
+[title-max-length]
+line-length=72
+
+[title-match-regex]
+regex=^(feat|fix|chore|docs|refactor|test|ci)(\(.+\))?: .+

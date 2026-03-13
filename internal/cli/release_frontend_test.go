@@ -16,6 +16,7 @@ func TestReleaseCommandDryRunDiscoversFrontendBundlesInUploads(t *testing.T) {
 	repo := t.TempDir()
 	configPath := filepath.Join(repo, "wailsrel.yaml")
 	if err := os.WriteFile(configPath, []byte(`
+schema: 2
 app:
   name: "MyApp"
   identifier: "com.example.myapp"
@@ -24,9 +25,14 @@ version:
   file: "VERSION"
   tag_prefix: "v"
 targets:
-  - os: linux
-    arch: [amd64]
-    output_formats: [appimage]
+  - id: linux-amd64
+    os: linux
+    arch: amd64
+    build:
+      argv: ["task", "build"]
+    artifacts:
+      - format: appimage
+        path: "bin/MyApp.AppImage"
 delta:
   enabled: true
   old_artifacts:

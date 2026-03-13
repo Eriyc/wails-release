@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=GitHub Releases Example
+Comment=Wails updater example using GitHub Releases directly
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/github-releases-app %u
+Terminal=false
+Type=Application
+Icon=github-releases-app
+Categories=Utility;
+StartupWMClass=github-releases-app
+
+ 

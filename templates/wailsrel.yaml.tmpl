@@ -1,3 +1,5 @@
+schema: 2
+
 app:
   name: "{{ .AppName }}"
   identifier: "{{ .Identifier }}"
@@ -12,45 +14,62 @@ version:
   prerelease_format: "beta.{n}"
 
 targets:
-  - os: darwin
-    arch: [amd64, arm64]
-    output_formats: [app, dmg]
-    sign:
-      provider: apple
-      identity: "Developer ID Application: Example Inc (XXXXXXXXXX)"
-      notarize: true
-      apple_id: "${APPLE_ID}"
-      password: "${APPLE_APP_PASSWORD}"
-      team_id: "${APPLE_TEAM_ID}"
-
-  - os: windows
-    arch: [amd64]
-    output_formats: [exe, nsis]
-    sign:
-      provider: azure
-      endpoint: "${AZURE_ENDPOINT}"
-      account: "${AZURE_CODE_SIGNING_NAME}"
-      profile: "${AZURE_CERT_PROFILE}"
-
-  - os: linux
-    arch: [amd64]
-    output_formats: [appimage, deb]
-    sign:
-      provider: none
-
-installers:
-  nsis:
-    license: "LICENSE"
-    icon: "build/windows/icon.ico"
-    custom_script: ""
-  dmg:
-    background: "build/darwin/dmg-bg.png"
-    icon_size: 80
-    window_size: [600, 400]
-  deb:
-    depends: [libgtk-3-0, libwebkit2gtk-4.1-0]
-    section: utils
-    priority: optional
+{{- if .HasDarwinTaskfile }}
+  - id: darwin-arm64
+    os: darwin
+    arch: arm64
+    build:
+      argv: ["task", "-t", "build/darwin/Taskfile.yml", "package"]
+      requires: ["task", "wails3"]
+    artifacts:
+      - format: app
+        path: "bin/{{ .AppName }}.app"
+      - format: dmg
+        glob: "bin/*.dmg"
+{{- end }}
+{{- if .HasWindowsTaskfile }}
+  - id: windows-amd64
+    os: windows
+    arch: amd64
+    build:
+      argv: ["task", "-t", "build/windows/Taskfile.yml", "create:nsis:installer", "ARCH={{"{{"}}arch{{"}}"}}"]
+      requires: ["task", "wails3", "makensis"]
+    artifacts:
+      - format: exe
+        path: "bin/{{ .AppName }}.exe"
+      - format: nsis
+        glob: "build/windows/nsis/*-installer.exe"
+      - format: msix
+        glob: "bin/*.msix"
+        include_in_manifest: false
+        enable_delta: false
+{{- end }}
+{{- if .HasLinuxTaskfile }}
+  - id: linux-amd64
+    os: linux
+    arch: amd64
+    build:
+      argv: ["task", "-t", "build/linux/Taskfile.yml", "create:appimage"]
+      requires: ["task", "wails3"]
+    artifacts:
+      - format: appimage
+        glob: "bin/*.AppImage"
+      - format: deb
+        glob: "bin/*.deb"
+      - format: rpm
+        glob: "bin/*.rpm"
+{{- end }}
+{{- if not .HasDetectedTaskfiles }}
+  - id: linux-amd64
+    os: linux
+    arch: amd64
+    build:
+      argv: ["task", "build"]
+      requires: ["task", "wails3"]
+    artifacts:
+      - format: binary
+        path: "bin/{{ .AppName }}"
+{{- end }}
 
 delta:
   enabled: true

@@ -104,8 +104,21 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 			Metadata:    cloneMetadata(artifact.Metadata),
 		}
 
+		assetName := strings.TrimSpace(artifact.PublishName)
+		if assetName == "" {
+			if artifact.IncludeInManifest {
+				ext := filepath.Ext(sourcePath)
+				if info.IsDir() {
+					ext = ".zip"
+				}
+				assetName = artifactAssetName(opts.App.Name, opts.Version, artifact, ext)
+			} else {
+				assetName = filepath.Base(sourcePath)
+			}
+		}
+
 		if info.IsDir() {
-			zipName := artifactAssetName(opts.App.Name, opts.Version, artifact, ".zip")
+			zipName := assetName
 			zipPath := filepath.Join(tempDir, zipName)
 			if err := zipDirectory(sourcePath, zipPath); err != nil {
 				return nil, err
@@ -119,8 +132,6 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 				ContentType: "application/zip",
 			})
 		} else {
-			ext := filepath.Ext(sourcePath)
-			assetName := artifactAssetName(opts.App.Name, opts.Version, artifact, ext)
 			published.AssetName = assetName
 			published.SourcePath = sourcePath
 			published.Transport = "file"
@@ -195,6 +206,9 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 	}
 
 	for _, artifact := range publishedArtifacts {
+		if !artifactInManifest(opts.Artifacts, artifact.LogicalPath) {
+			continue
+		}
 		manifest.Artifacts = append(manifest.Artifacts, ManifestArtifact{
 			Path:      artifact.LogicalPath,
 			AssetName: artifact.AssetName,
@@ -335,6 +349,11 @@ func findArtifact(artifacts []build.Artifact, logicalPath string) (build.Artifac
 		}
 	}
 	return build.Artifact{}, false
+}
+
+func artifactInManifest(artifacts []build.Artifact, logicalPath string) bool {
+	artifact, ok := findArtifact(artifacts, logicalPath)
+	return ok && artifact.IncludeInManifest
 }
 
 func artifactAssetName(appName, version string, artifact build.Artifact, ext string) string {

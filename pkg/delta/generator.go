@@ -19,6 +19,7 @@ const manifestFileName = "manifest.json"
 type Options struct {
 	OutputDir        string
 	CacheDir         string
+	Artifacts        []string
 	FromVersions     int
 	Source           string
 	TagPrefix        string
@@ -32,6 +33,7 @@ type Options struct {
 type Generator struct {
 	outputDir        string
 	cacheDir         string
+	artifacts        []string
 	fromVersions     int
 	source           string
 	tagPrefix        string
@@ -116,6 +118,7 @@ func NewGenerator(opts Options) *Generator {
 	return &Generator{
 		outputDir:        filepath.Clean(opts.OutputDir),
 		cacheDir:         filepath.Clean(opts.CacheDir),
+		artifacts:        append([]string(nil), opts.Artifacts...),
 		fromVersions:     opts.FromVersions,
 		source:           opts.Source,
 		tagPrefix:        opts.TagPrefix,
@@ -132,7 +135,7 @@ func (g *Generator) Plan() (*Plan, error) {
 }
 
 func (g *Generator) PlanContext(ctx context.Context) (*Plan, error) {
-	artifacts, err := discoverCurrentArtifacts(g.outputDir)
+	artifacts, err := discoverCurrentArtifacts(g.outputDir, g.artifacts)
 	if err != nil {
 		return nil, err
 	}
@@ -269,13 +272,17 @@ func (g *Generator) GenerateContext(_ context.Context, plan *Plan) (*Result, err
 	return result, nil
 }
 
-func discoverCurrentArtifacts(outputDir string) ([]currentArtifact, error) {
+func discoverCurrentArtifacts(outputDir string, allowed []string) ([]currentArtifact, error) {
 	entries, err := os.ReadDir(outputDir)
 	if err != nil {
 		return nil, err
 	}
 
 	artifacts := make([]currentArtifact, 0)
+	allowedSet := make(map[string]struct{}, len(allowed))
+	for _, artifact := range allowed {
+		allowedSet[filepath.ToSlash(filepath.Clean(artifact))] = struct{}{}
+	}
 	for _, osEntry := range entries {
 		if !osEntry.IsDir() || osEntry.Name() == "delta" {
 			continue
@@ -309,8 +316,14 @@ func discoverCurrentArtifacts(outputDir string) ([]currentArtifact, error) {
 					kind = ArtifactDirectory
 				}
 
+				relative := filepath.ToSlash(filepath.Join(osEntry.Name(), archEntry.Name(), name))
+				if len(allowedSet) > 0 {
+					if _, ok := allowedSet[relative]; !ok {
+						continue
+					}
+				}
 				artifacts = append(artifacts, currentArtifact{
-					relative: filepath.ToSlash(filepath.Join(osEntry.Name(), archEntry.Name(), name)),
+					relative: relative,
 					path:     filepath.Join(archDir, name),
 					kind:     kind,
 				})

@@ -1,0 +1,13 @@
+[Desktop Entry]
+Version=1.0
+Name=Authenticated HTTP Example
+Comment=Wails updater example using an authenticated HTTP proxy
+# The Exec line includes %u to pass the URL to the application
+Exec=/usr/local/bin/authenticated-http-app %u
+Terminal=false
+Type=Application
+Icon=authenticated-http-app
+Categories=Utility;
+StartupWMClass=authenticated-http-app
+
+ 

@@ -13,8 +13,10 @@ From `examples/github-releases-app`:
 ```bash
 export EXAMPLE_GITHUB_REPOSITORY=owner/repo
 export EXAMPLE_CURRENT_VERSION=1.0.0
-go run .
+wails3 dev
 ```
+
+Use `wails3 build` when you want a packaged binary for testing full replace-and-restart behavior.
 
 Optional overrides:
 
@@ -38,8 +40,10 @@ Start the Bun proxy first. Then from `examples/authenticated-http-app`:
 export EXAMPLE_PROXY_BASE_URL=http://127.0.0.1:8787
 export EXAMPLE_PROXY_TOKEN=change-me
 export EXAMPLE_CURRENT_VERSION=1.0.0
-go run .
+wails3 dev
 ```
+
+Use `wails3 build` when you want a packaged binary for testing full replace-and-restart behavior.
 
 Optional overrides:
 
@@ -76,5 +80,6 @@ Routes:
 
 ## Notes
 
+- Both Wails examples are full `wails3 init` projects, including the generated `frontend/`, `build/`, and task configuration files.
 - Both Wails examples compute the current executable checksum automatically when possible so delta updates can be selected when the local binary matches a released artifact.
-- Applying updates while running under `go run` targets a temporary Go build cache executable, so packaged builds are the realistic way to exercise replace-and-restart behavior.
+- `wails3 dev` is useful for iterating on the UI and updater integration, but packaged builds are the realistic way to exercise replace-and-restart behavior.

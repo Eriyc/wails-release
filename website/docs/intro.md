@@ -9,8 +9,7 @@ sidebar_position: 1
 
 It covers:
 
-- build artifacts for one or more OS and architecture targets
-- platform signing and macOS notarization
+- Wails-owned build hooks for one or more OS and architecture targets
 - release manifests and optional delta patch manifests
 - GitHub Releases or custom HTTP delivery
 - optional frontend bundles and release channels

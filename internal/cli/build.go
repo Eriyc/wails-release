@@ -42,6 +42,11 @@ func newBuildCmd(opts *Options) *cobra.Command {
 				Targets:   matrix,
 			}
 
+			tag, versionText, err := resolveReleaseVersion(cmd.Context(), projectDir, cfg)
+			if err != nil {
+				return err
+			}
+
 			compatResult, err := checkFrontendCompat(projectDir, cfg)
 			if err != nil {
 				return err
@@ -63,7 +68,7 @@ func newBuildCmd(opts *Options) *cobra.Command {
 					return err
 				}
 				for _, target := range matrix {
-					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "- %s/%s -> %v\n", target.OS, target.Arch, target.OutputFormats); err != nil {
+					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "- %s (%s/%s) -> %v\n", target.ID, target.OS, target.Arch, target.Build.Argv); err != nil {
 						return err
 					}
 				}
@@ -83,7 +88,8 @@ func newBuildCmd(opts *Options) *cobra.Command {
 				ProjectDir: projectDir,
 				OutputDir:  outputDir,
 				AppName:    cfg.App.Name,
-				Installers: cfg.Installers,
+				Version:    versionText,
+				Tag:        tag,
 				Timeout:    timeout,
 			})
 
@@ -102,6 +108,9 @@ func newBuildCmd(opts *Options) *cobra.Command {
 				view.Artifacts = append(view.Artifacts, result.Artifacts...)
 			}
 			view.Duration = time.Since(start).String()
+			if err := writeArtifactMetadata(outputDir, view.Artifacts); err != nil {
+				return err
+			}
 			if err := persistFrontendCompat(projectDir, cfg, compatResult); err != nil {
 				return err
 			}

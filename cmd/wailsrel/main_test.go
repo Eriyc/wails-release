@@ -17,52 +17,37 @@ func TestMainPrintsUserFacingErrors(t *testing.T) {
 	repo := t.TempDir()
 	configPath := filepath.Join(repo, "wailsrel.yaml")
 	if err := os.WriteFile(configPath, []byte(`
+schema: 2
 app:
   name: "Test App"
   identifier: "com.example.test"
 targets:
-  - os: windows
-    arch: [amd64]
-    output_formats: [exe]
-    sign:
-      provider: azure
-      endpoint: "https://account.codesigning.azure.net"
-      account: "account"
-      profile: "profile"
+  - id: windows-amd64
+    os: windows
+    arch: amd64
+    build:
+      argv: ["task", "build"]
+      requires: ["task", "wails3", "makensis"]
+    artifacts:
+      - format: exe
+        path: "bin/Test App.exe"
 `), 0o644); err != nil {
 		t.Fatalf("write config: %v", err)
-	}
-
-	artifactPath := filepath.Join(repo, "dist", "MyApp.exe")
-	if err := os.MkdirAll(filepath.Dir(artifactPath), 0o755); err != nil {
-		t.Fatalf("mkdir dist: %v", err)
-	}
-	if err := os.WriteFile(artifactPath, []byte("binary"), 0o644); err != nil {
-		t.Fatalf("write artifact: %v", err)
 	}
 
 	toolsDir := filepath.Join(repo, "tools")
 	if err := os.MkdirAll(toolsDir, 0o755); err != nil {
 		t.Fatalf("mkdir tools: %v", err)
 	}
-	if err := os.WriteFile(filepath.Join(toolsDir, "signtool"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("write signtool: %v", err)
+	for _, name := range []string{"task", "wails3"} {
+		if err := os.WriteFile(filepath.Join(toolsDir, name), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+			t.Fatalf("write tool %s: %v", name, err)
+		}
 	}
 
-	dlibPath := filepath.Join(repo, "Azure.CodeSigning.Dlib.dll")
-	if err := os.WriteFile(dlibPath, []byte("dlib"), 0o644); err != nil {
-		t.Fatalf("write dlib: %v", err)
-	}
-
-	cmd := exec.Command("go", "run", "./cmd/wailsrel", "--config", configPath, "sign", artifactPath)
+	cmd := exec.Command("go", "run", "./cmd/wailsrel", "--config", configPath, "doctor")
 	cmd.Dir = filepath.Join("..", "..")
-	cmd.Env = append(os.Environ(),
-		"PATH="+toolsDir+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"AZURE_TRUSTED_SIGNING_DLIB="+dlibPath,
-		"AZURE_TENANT_ID=",
-		"AZURE_CLIENT_ID=",
-		"AZURE_CLIENT_SECRET=",
-	)
+	cmd.Env = append(os.Environ(), "PATH="+toolsDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	output, err := cmd.CombinedOutput()
 	if err == nil {
@@ -70,7 +55,7 @@ targets:
 	}
 
 	text := string(output)
-	if !strings.Contains(text, "AZURE_TENANT_ID is required") {
-		t.Fatalf("expected credential error in output, got %q", text)
+	if !strings.Contains(text, "makensis") {
+		t.Fatalf("expected missing tool in output, got %q", text)
 	}
 }

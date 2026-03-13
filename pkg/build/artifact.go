@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -334,4 +335,14 @@ func findArtifact(root string, patterns ...string) (string, error) {
 
 func normalizeArtifactPath(path string) string {
 	return filepath.ToSlash(strings.TrimPrefix(path, string(filepath.Separator)))
+}
+
+func requirePath(path string) error {
+	if _, err := os.Stat(path); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("expected build artifact %s to exist", path)
+		}
+		return err
+	}
+	return nil
 }

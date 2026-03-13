@@ -9,7 +9,7 @@ sidebar_position: 2
 - Go 1.25 or newer
 - a Wails v3 project
 - Git tags available locally if `version.source: git`
-- the signing tools required by the targets in your config
+- the native packaging and signing tools required by your Wails build hooks
 
 ## Install
 
@@ -23,11 +23,13 @@ go install github.com/Eriyc/wailsrel/cmd/wailsrel@latest
 wailsrel init --name "MyApp" --identifier "com.example.myapp"
 ```
 
-`wailsrel init` creates a full `wailsrel.yaml`. Delete the targets you do not build and replace the placeholder signing values.
+`wailsrel init` creates a schema 2 `wailsrel.yaml`. Adjust the generated Wails task hooks and artifact paths to match your project.
 
 ## Minimal GitHub Releases config
 
 ```yaml
+schema: 2
+
 app:
   name: "MyApp"
   identifier: "com.example.myapp"
@@ -37,11 +39,17 @@ version:
   tag_prefix: "v"
 
 targets:
-  - os: linux
-    arch: [amd64]
-    output_formats: [appimage, deb]
-    sign:
-      provider: none
+  - id: linux-amd64
+    os: linux
+    arch: amd64
+    build:
+      argv: ["task", "-t", "build/linux/Taskfile.yml", "create:appimage"]
+      requires: ["task", "wails3"]
+    artifacts:
+      - format: appimage
+        glob: "bin/*.AppImage"
+      - format: deb
+        glob: "bin/*.deb"
 
 delta:
   enabled: true
@@ -67,7 +75,7 @@ wailsrel status
 wailsrel doctor
 ```
 
-`doctor` checks the toolchain for the configured targets and verifies that the selected signing provider is usable on the current machine or CI runner.
+`doctor` checks the toolchain required by your configured build hooks and release provider.
 
 ## Build and publish
 
@@ -77,7 +85,7 @@ wailsrel delta
 wailsrel release
 ```
 
-- `build` creates the configured native artifacts in `dist/`
+- `build` runs your configured Wails-owned build hooks and stages the discovered artifacts in `dist/`
 - `delta` generates patch files and a delta manifest when `delta.enabled: true`
 - `release` runs the full pipeline and publishes assets according to `release.provider`
 

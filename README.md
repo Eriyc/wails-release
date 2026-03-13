@@ -1,6 +1,6 @@
 # wailsrel
 
-`wailsrel` builds, signs, publishes, and applies updates for Wails v3 applications.
+`wailsrel` orchestrates releases and updates for Wails v3 applications.
 
 ## Install
 
@@ -11,7 +11,7 @@ go install github.com/Eriyc/wailsrel/cmd/wailsrel@latest
 ## Consumer flow
 
 1. Scaffold `wailsrel.yaml`.
-2. Configure targets, signing, and release hosting.
+2. Configure Wails-owned build hooks, artifact discovery, and release hosting.
 3. Point your app at a stable `manifest.json` URL.
 4. Run the release commands in CI.
 5. Use `pkg/update` and optional `pkg/frontend` in the client app.
@@ -27,8 +27,7 @@ wailsrel release
 ## Required inputs
 
 - GitHub publishing: `GITHUB_TOKEN`
-- macOS notarization: `APPLE_ID`, `APPLE_APP_PASSWORD`, `APPLE_TEAM_ID`
-- Windows Trusted Signing: `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_ENDPOINT`, `AZURE_CODE_SIGNING_NAME`, `AZURE_CERT_PROFILE`
+- Native signing credentials and platform packaging config: managed by your Wails project and its `build/` tooling
 - HTTP or authenticated delivery: a stable `manifest.json` endpoint and whatever auth token or JWT your download server expects
 
 ## Docs

@@ -13,16 +13,16 @@ import (
 const DefaultFileName = "wailsrel.yaml"
 
 type Config struct {
-	App        AppConfig       `yaml:"app"`
-	Version    VersionConfig   `yaml:"version"`
-	Targets    []TargetConfig  `yaml:"targets"`
-	Installers InstallerConfig `yaml:"installers"`
-	Delta      DeltaConfig     `yaml:"delta"`
-	Frontend   FrontendConfig  `yaml:"frontend"`
-	Update     UpdateConfig    `yaml:"update"`
-	Release    ReleaseConfig   `yaml:"release"`
-	Output     OutputConfig    `yaml:"output"`
-	CI         CIConfig        `yaml:"ci"`
+	Schema   int            `yaml:"schema"`
+	App      AppConfig      `yaml:"app"`
+	Version  VersionConfig  `yaml:"version"`
+	Targets  []TargetConfig `yaml:"targets"`
+	Delta    DeltaConfig    `yaml:"delta"`
+	Frontend FrontendConfig `yaml:"frontend"`
+	Update   UpdateConfig   `yaml:"update"`
+	Release  ReleaseConfig  `yaml:"release"`
+	Output   OutputConfig   `yaml:"output"`
+	CI       CIConfig       `yaml:"ci"`
 }
 
 type AppConfig struct {
@@ -41,49 +41,27 @@ type VersionConfig struct {
 }
 
 type TargetConfig struct {
-	OS            string     `yaml:"os"`
-	Arch          []string   `yaml:"arch"`
-	OutputFormats []string   `yaml:"output_formats"`
-	Sign          SignConfig `yaml:"sign"`
+	ID        string          `yaml:"id"`
+	OS        string          `yaml:"os"`
+	Arch      string          `yaml:"arch"`
+	Build     BuildHookConfig `yaml:"build"`
+	Artifacts []ArtifactSpec  `yaml:"artifacts"`
 }
 
-type SignConfig struct {
-	Provider string `yaml:"provider"`
-
-	Identity string `yaml:"identity"`
-	Notarize bool   `yaml:"notarize"`
-
-	AppleID  string `yaml:"apple_id"`
-	Password string `yaml:"password"`
-	TeamID   string `yaml:"team_id"`
-
-	Endpoint string `yaml:"endpoint"`
-	Account  string `yaml:"account"`
-	Profile  string `yaml:"profile"`
+type BuildHookConfig struct {
+	Argv     []string          `yaml:"argv"`
+	Workdir  string            `yaml:"workdir"`
+	Env      map[string]string `yaml:"env"`
+	Requires []string          `yaml:"requires"`
 }
 
-type InstallerConfig struct {
-	NSIS NSISInstallerConfig `yaml:"nsis"`
-	DMG  DMGInstallerConfig  `yaml:"dmg"`
-	Deb  DebInstallerConfig  `yaml:"deb"`
-}
-
-type NSISInstallerConfig struct {
-	License      string `yaml:"license"`
-	Icon         string `yaml:"icon"`
-	CustomScript string `yaml:"custom_script"`
-}
-
-type DMGInstallerConfig struct {
-	Background string `yaml:"background"`
-	IconSize   int    `yaml:"icon_size"`
-	WindowSize []int  `yaml:"window_size"`
-}
-
-type DebInstallerConfig struct {
-	Depends  []string `yaml:"depends"`
-	Section  string   `yaml:"section"`
-	Priority string   `yaml:"priority"`
+type ArtifactSpec struct {
+	Format            string `yaml:"format"`
+	Path              string `yaml:"path"`
+	Glob              string `yaml:"glob"`
+	PublishName       string `yaml:"publish_name"`
+	IncludeInManifest *bool  `yaml:"include_in_manifest"`
+	EnableDelta       *bool  `yaml:"enable_delta"`
 }
 
 type DeltaConfig struct {
