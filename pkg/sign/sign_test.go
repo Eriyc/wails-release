@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -306,8 +307,16 @@ func (r *recordingRunner) Run(_ context.Context, name string, args []string, _ i
 
 func writeExecutable(t *testing.T, path string) {
 	t.Helper()
-	if err := os.WriteFile(path, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-		t.Fatalf("write executable %s: %v", path, err)
+
+	targetPath := path
+	contents := []byte("#!/bin/sh\nexit 0\n")
+	if runtime.GOOS == "windows" {
+		targetPath = path + ".bat"
+		contents = []byte("@echo off\r\nexit /b 0\r\n")
+	}
+
+	if err := os.WriteFile(targetPath, contents, 0o755); err != nil {
+		t.Fatalf("write executable %s: %v", targetPath, err)
 	}
 }
 
