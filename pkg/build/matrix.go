@@ -10,6 +10,7 @@ func ExpandMatrix(targets []config.TargetConfig) []Target {
 				OS:            target.OS,
 				Arch:          arch,
 				OutputFormats: append([]string(nil), target.OutputFormats...),
+				Sign:          target.Sign,
 			})
 		}
 	}

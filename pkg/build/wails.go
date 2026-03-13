@@ -53,6 +53,14 @@ func (b *WailsBuilder) Available(ctx context.Context, target Target) error {
 		return fmt.Errorf("missing required tools for %s/%s: %v", target.OS, target.Arch, missing)
 	}
 
+	signer, err := b.newSigner(target.Sign)
+	if err != nil {
+		return err
+	}
+	if err := signer.Available(ctx); err != nil {
+		return fmt.Errorf("signing unavailable for %s/%s: %w", target.OS, target.Arch, err)
+	}
+
 	return nil
 }
 

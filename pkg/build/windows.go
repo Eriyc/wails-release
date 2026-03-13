@@ -32,6 +32,9 @@ func (b *WailsBuilder) buildWindows(ctx context.Context, target Target) ([]Artif
 	if err := requirePath(exePath); err != nil {
 		return nil, err
 	}
+	if err := b.signArtifact(ctx, target, exePath, false); err != nil {
+		return nil, err
+	}
 
 	var artifacts []Artifact
 	for _, format := range target.OutputFormats {
@@ -45,6 +48,9 @@ func (b *WailsBuilder) buildWindows(ctx context.Context, target Target) ([]Artif
 		case "nsis":
 			installerPath, err := b.createNSISInstaller(ctx, target, exePath)
 			if err != nil {
+				return nil, err
+			}
+			if err := b.signArtifact(ctx, target, installerPath, false); err != nil {
 				return nil, err
 			}
 			artifact, err := b.stageArtifact(target, "nsis", installerPath, nil)

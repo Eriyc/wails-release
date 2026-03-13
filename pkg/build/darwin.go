@@ -17,6 +17,9 @@ func (b *WailsBuilder) buildDarwin(ctx context.Context, target Target) ([]Artifa
 	if err := requirePath(appPath); err != nil {
 		return nil, err
 	}
+	if err := b.signArtifact(ctx, target, appPath, false); err != nil {
+		return nil, err
+	}
 
 	var artifacts []Artifact
 	for _, format := range target.OutputFormats {
@@ -30,6 +33,9 @@ func (b *WailsBuilder) buildDarwin(ctx context.Context, target Target) ([]Artifa
 		case "dmg":
 			dmgPath, err := b.createDMG(ctx, target, appPath)
 			if err != nil {
+				return nil, err
+			}
+			if err := b.signArtifact(ctx, target, dmgPath, target.Sign.Notarize); err != nil {
 				return nil, err
 			}
 			artifact, err := b.stageArtifact(target, "dmg", dmgPath, nil)

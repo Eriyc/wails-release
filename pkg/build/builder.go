@@ -7,12 +7,14 @@ import (
 
 	internalexec "github.com/you/wailsrel/internal/exec"
 	"github.com/you/wailsrel/pkg/config"
+	"github.com/you/wailsrel/pkg/sign"
 )
 
 type Target struct {
 	OS            string
 	Arch          string
 	OutputFormats []string
+	Sign          config.SignConfig
 }
 
 type Artifact struct {
@@ -48,6 +50,7 @@ type Options struct {
 	Timeout    time.Duration
 	Logger     *slog.Logger
 	Runner     Runner
+	NewSigner  func(config.SignConfig) (sign.Signer, error)
 	TemplateFS interface {
 		ReadFile(name string) ([]byte, error)
 	}
@@ -61,6 +64,7 @@ type WailsBuilder struct {
 	timeout    time.Duration
 	logger     *slog.Logger
 	runner     Runner
+	newSigner  func(config.SignConfig) (sign.Signer, error)
 	templateFS interface {
 		ReadFile(name string) ([]byte, error)
 	}
@@ -77,6 +81,11 @@ func NewBuilder(opts Options) *WailsBuilder {
 		runner = defaultRunner{}
 	}
 
+	newSigner := opts.NewSigner
+	if newSigner == nil {
+		newSigner = sign.NewSigner
+	}
+
 	return &WailsBuilder{
 		projectDir: opts.ProjectDir,
 		outputDir:  opts.OutputDir,
@@ -85,6 +94,7 @@ func NewBuilder(opts Options) *WailsBuilder {
 		timeout:    opts.Timeout,
 		logger:     logger,
 		runner:     runner,
+		newSigner:  newSigner,
 		templateFS: opts.TemplateFS,
 	}
 }

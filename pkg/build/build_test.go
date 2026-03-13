@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/you/wailsrel/pkg/config"
+	"github.com/you/wailsrel/pkg/sign"
 )
 
 func TestExpandMatrix(t *testing.T) {
@@ -114,6 +115,95 @@ func TestBuildLinuxStagesArtifacts(t *testing.T) {
 	}
 }
 
+func TestBuildDarwinSignsAppAndDMG(t *testing.T) {
+	projectDir := t.TempDir()
+	outputDir := filepath.Join(projectDir, "dist")
+
+	if err := os.MkdirAll(filepath.Join(projectDir, "bin"), 0o755); err != nil {
+		t.Fatalf("mkdir bin: %v", err)
+	}
+
+	toolsDir := filepath.Join(projectDir, "tools")
+	if err := os.MkdirAll(toolsDir, 0o755); err != nil {
+		t.Fatalf("mkdir tools: %v", err)
+	}
+
+	writeTool(t, filepath.Join(toolsDir, "wails3"), darwinToolScript())
+	writeTool(t, filepath.Join(toolsDir, "hdiutil"), hdiutilToolScript())
+	t.Setenv("PATH", toolsDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	fake := &recordingSigner{}
+	builder := NewBuilder(Options{
+		ProjectDir: projectDir,
+		OutputDir:  outputDir,
+		AppName:    "MyApp",
+		Timeout:    5 * time.Second,
+		NewSigner: func(cfg config.SignConfig) (sign.Signer, error) {
+			return fake, nil
+		},
+	})
+
+	target := Target{
+		OS:            "darwin",
+		Arch:          "arm64",
+		OutputFormats: []string{"app", "dmg"},
+		Sign:          config.SignConfig{Provider: "apple", Notarize: true},
+	}
+
+	if err := builder.Available(context.Background(), target); err != nil {
+		t.Fatalf("available: %v", err)
+	}
+
+	result, err := builder.Build(context.Background(), target)
+	if err != nil {
+		t.Fatalf("build: %v", err)
+	}
+	if len(result.Artifacts) != 2 {
+		t.Fatalf("expected 2 artifacts, got %d", len(result.Artifacts))
+	}
+	if len(fake.signed) != 2 {
+		t.Fatalf("expected 2 sign calls, got %d", len(fake.signed))
+	}
+	if !strings.HasSuffix(fake.signed[0].path, ".app") {
+		t.Fatalf("expected app sign first, got %q", fake.signed[0].path)
+	}
+	if fake.signed[0].notarize {
+		t.Fatal("expected app signing to skip notarization")
+	}
+	if !strings.HasSuffix(fake.signed[1].path, ".dmg") {
+		t.Fatalf("expected dmg sign second, got %q", fake.signed[1].path)
+	}
+	if !fake.signed[1].notarize {
+		t.Fatal("expected dmg signing to request notarization")
+	}
+}
+
+type recordingSigner struct {
+	signed []signedArtifact
+}
+
+type signedArtifact struct {
+	path     string
+	notarize bool
+}
+
+func (s *recordingSigner) Provider() string {
+	return "test"
+}
+
+func (s *recordingSigner) Available(context.Context) error {
+	return nil
+}
+
+func (s *recordingSigner) Sign(_ context.Context, path string, opts sign.SignOpts) (*sign.SignResult, error) {
+	s.signed = append(s.signed, signedArtifact{path: path, notarize: opts.Notarize})
+	return &sign.SignResult{Signed: true}, nil
+}
+
+func (s *recordingSigner) Verify(context.Context, string) error {
+	return nil
+}
+
 func writeTool(t *testing.T, path, content string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
@@ -143,5 +233,25 @@ case "$1" in
     exit 1
     ;;
 esac
+`
+}
+
+func darwinToolScript() string {
+	return `#!/bin/sh
+set -eu
+mkdir -p bin/MyApp.app/Contents/MacOS
+printf 'darwin-binary' > bin/MyApp.app/Contents/MacOS/MyApp
+chmod +x bin/MyApp.app/Contents/MacOS/MyApp
+`
+}
+
+func hdiutilToolScript() string {
+	return `#!/bin/sh
+set -eu
+for arg in "$@"; do
+  out="$arg"
+done
+mkdir -p "$(dirname "$out")"
+printf 'dmg' > "$out"
 `
 }

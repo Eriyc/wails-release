@@ -19,6 +19,12 @@ var (
 	validCIProviders    = []string{"github"}
 )
 
+var validSignProvidersByOS = map[string][]string{
+	"darwin":  {"", "none", "apple", "apple-rcodesign"},
+	"windows": {"", "none", "azure"},
+	"linux":   {"", "none"},
+}
+
 func (c *Config) Validate() []ValidationError {
 	var errs []ValidationError
 
@@ -64,6 +70,40 @@ func (c *Config) Validate() []ValidationError {
 		}
 		if !slices.Contains(validSignProviders, target.Sign.Provider) {
 			errs = append(errs, ValidationError{Field: prefix + ".sign.provider", Message: "unsupported signing provider", Fatal: true})
+		}
+		if allowed := validSignProvidersByOS[target.OS]; len(allowed) > 0 && !slices.Contains(allowed, target.Sign.Provider) {
+			errs = append(errs, ValidationError{Field: prefix + ".sign.provider", Message: "signing provider is not supported for target OS " + target.OS, Fatal: true})
+		}
+		switch target.Sign.Provider {
+		case "apple":
+			if strings.TrimSpace(target.Sign.Identity) == "" {
+				errs = append(errs, ValidationError{Field: prefix + ".sign.identity", Message: "must be set when sign.provider=apple", Fatal: true})
+			}
+			if target.Sign.Notarize {
+				if strings.TrimSpace(target.Sign.AppleID) == "" {
+					errs = append(errs, ValidationError{Field: prefix + ".sign.apple_id", Message: "must be set when notarization is enabled", Fatal: true})
+				}
+				if strings.TrimSpace(target.Sign.Password) == "" {
+					errs = append(errs, ValidationError{Field: prefix + ".sign.password", Message: "must be set when notarization is enabled", Fatal: true})
+				}
+				if strings.TrimSpace(target.Sign.TeamID) == "" {
+					errs = append(errs, ValidationError{Field: prefix + ".sign.team_id", Message: "must be set when notarization is enabled", Fatal: true})
+				}
+			}
+		case "apple-rcodesign":
+			if strings.TrimSpace(target.Sign.Identity) == "" {
+				errs = append(errs, ValidationError{Field: prefix + ".sign.identity", Message: "must point to a PKCS#12 bundle or certificate file when sign.provider=apple-rcodesign", Fatal: true})
+			}
+		case "azure":
+			if strings.TrimSpace(target.Sign.Endpoint) == "" {
+				errs = append(errs, ValidationError{Field: prefix + ".sign.endpoint", Message: "must be set when sign.provider=azure", Fatal: true})
+			}
+			if strings.TrimSpace(target.Sign.Account) == "" {
+				errs = append(errs, ValidationError{Field: prefix + ".sign.account", Message: "must be set when sign.provider=azure", Fatal: true})
+			}
+			if strings.TrimSpace(target.Sign.Profile) == "" {
+				errs = append(errs, ValidationError{Field: prefix + ".sign.profile", Message: "must be set when sign.provider=azure", Fatal: true})
+			}
 		}
 	}
 

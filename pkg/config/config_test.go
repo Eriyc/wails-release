@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -85,5 +86,51 @@ func TestValidateReportsFatalErrors(t *testing.T) {
 
 	if fatalCount == 0 {
 		t.Fatal("expected at least one fatal error")
+	}
+}
+
+func TestValidateRejectsUnsupportedSigningConfiguration(t *testing.T) {
+	cfg := &Config{
+		App: AppConfig{
+			Name:       "MyApp",
+			Identifier: "com.example.myapp",
+		},
+		Version: VersionConfig{
+			Source: "git",
+		},
+		Targets: []TargetConfig{
+			{
+				OS:            "linux",
+				Arch:          []string{"amd64"},
+				OutputFormats: []string{"binary"},
+				Sign: SignConfig{
+					Provider: "azure",
+				},
+			},
+		},
+		Output: OutputConfig{
+			Dir:          "dist",
+			ManifestFile: "manifest.json",
+		},
+		CI: CIConfig{
+			Provider: "github",
+			Timeout:  "30m",
+		},
+	}
+
+	errs := cfg.Validate()
+	if len(errs) == 0 {
+		t.Fatal("expected validation errors")
+	}
+
+	var found bool
+	for _, err := range errs {
+		if err.Field == "targets[0].sign.provider" && strings.Contains(err.Message, "not supported") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected unsupported signing provider error, got %+v", errs)
 	}
 }

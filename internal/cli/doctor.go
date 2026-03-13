@@ -1,18 +1,21 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os/exec"
 
 	"github.com/spf13/cobra"
 	"github.com/you/wailsrel/pkg/build"
+	"github.com/you/wailsrel/pkg/sign"
 )
 
 type doctorCheck struct {
-	Name  string `json:"name"`
-	Found bool   `json:"found"`
-	Path  string `json:"path,omitempty"`
+	Name    string `json:"name"`
+	Found   bool   `json:"found"`
+	Path    string `json:"path,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 
 type doctorView struct {
@@ -44,6 +47,35 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 				seen[name] = struct{}{}
 				checks = append(checks, lookup(name))
 			}
+			if err == nil {
+				seenSigning := make(map[string]struct{})
+				for _, target := range build.ExpandMatrix(cfg.Targets) {
+					key := target.OS + "/" + target.Sign.Provider
+					if _, ok := seenSigning[key]; ok {
+						continue
+					}
+					seenSigning[key] = struct{}{}
+
+					signer, signErr := sign.NewSigner(target.Sign)
+					if signErr != nil {
+						checks = append(checks, doctorCheck{
+							Name:    "sign " + key,
+							Message: signErr.Error(),
+						})
+						continue
+					}
+
+					check := doctorCheck{
+						Name:  "sign " + key,
+						Found: true,
+					}
+					if availErr := signer.Available(context.Background()); availErr != nil {
+						check.Found = false
+						check.Message = availErr.Error()
+					}
+					checks = append(checks, check)
+				}
+			}
 
 			view := doctorView{Checks: checks}
 			if opts.JSON {
@@ -56,7 +88,10 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 					if !check.Found {
 						state = "missing"
 					}
-					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%-12s %s\n", check.Name, state); err != nil {
+					if check.Message != "" {
+						state = state + " (" + check.Message + ")"
+					}
+					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%-20s %s\n", check.Name, state); err != nil {
 						return err
 					}
 				}
@@ -64,7 +99,7 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 
 			for _, check := range checks {
 				if !check.Found {
-					return errors.New("one or more required tools are missing")
+					return errors.New("one or more required dependencies are missing")
 				}
 			}
 
