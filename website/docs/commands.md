@@ -4,46 +4,120 @@ sidebar_position: 3
 
 # CLI Commands
 
-The current CLI surface focuses on release automation for Wails applications.
+Every command reads `wailsrel.yaml` unless you pass `--config`.
 
 ## `init`
 
-Creates or seeds project configuration so `wailsrel` can reason about build, signing, and release inputs.
+Create a starter config:
+
+```bash
+wailsrel init --name "MyApp" --identifier "com.example.myapp"
+```
+
+Use `--force` to overwrite an existing file.
 
 ## `status`
 
-Shows the effective project state, including discovered configuration and release-relevant inputs.
+Print the resolved config path, app identifier, target count, frontend channels, and output directory:
+
+```bash
+wailsrel status
+```
 
 ## `doctor`
 
-Checks whether the local environment is ready for the release workflow.
+Validate the local toolchain and signing setup for the configured targets:
+
+```bash
+wailsrel doctor
+```
+
+Run this on each CI runner before `build` or `release`.
 
 ## `bump`
 
-Manages semantic version changes and changelog generation based on git history.
+Advance the application version from Git history:
+
+```bash
+wailsrel bump patch
+wailsrel bump minor --prerelease
+wailsrel bump pre
+```
+
+Valid bump types are `patch`, `minor`, `major`, and `pre`.
 
 ## `build`
 
-Runs the multi-target Wails build pipeline and stages artifacts for release packaging.
+Build all configured native targets:
 
-## `sign`
+```bash
+wailsrel build
+```
 
-Applies platform-specific signing steps to generated artifacts.
+Use `--dry-run` to print the target matrix without building.
+
+## `sign <path>`
+
+Sign one artifact with the signing configuration that matches the target OS:
+
+```bash
+wailsrel sign dist/MyApp.dmg
+wailsrel sign --os windows --provider azure dist/MyApp.exe
+```
+
+OS is inferred from the file extension unless you override it.
 
 ## `delta`
 
-Builds delta update packages against previously cached release artifacts.
-
-## Current command pattern
-
-Commands can be executed without installing a binary:
+Generate delta patches from previously published artifacts:
 
 ```bash
-go run ./cmd/wailsrel <command>
+wailsrel delta
 ```
 
-Example:
+Use `delta.old_artifacts.source` to decide where old artifacts come from:
+
+- `github-release`
+- `local-cache`
+- `url`
+
+## `bundle`
+
+Build one frontend bundle zip for the active or requested channel:
 
 ```bash
-go run ./cmd/wailsrel doctor
+wailsrel bundle
+wailsrel bundle --channel beta
 ```
+
+This command uses `frontend.build_command`, `frontend.build_dir`, and `frontend.compat_version`.
+
+## `channel <name>`
+
+Set the active frontend channel stored under `.wailsrel/` for the app:
+
+```bash
+wailsrel channel stable
+wailsrel channel beta
+```
+
+## `release`
+
+Run the full release pipeline:
+
+```bash
+wailsrel release
+```
+
+`release` builds native artifacts, builds frontend bundles, generates delta patches, creates manifests, and publishes assets through the configured release provider.
+
+## Global flags
+
+```bash
+wailsrel --config ./ci/linux.yaml --json --dry-run release
+```
+
+- `--config`, `-c`: path to `wailsrel.yaml`
+- `--json`: machine-readable output
+- `--dry-run`: show planned work without mutating files or publishing
+- `--verbose`, `-v`: verbose logging

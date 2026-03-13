@@ -1,27 +1,10 @@
 # Examples
 
-This directory contains three end-to-end examples for `wailsrel`:
+Use these examples to validate the delivery model you want in a consumer app:
 
 - `github-releases-app`: a Wails app that checks a `manifest.json` hosted directly on GitHub Releases and downloads update artifacts from GitHub.
 - `authenticated-http-app`: a Wails app that checks a manifest from an HTTP server and downloads update artifacts through an authenticated proxy.
 - `authenticated-release-proxy`: a Bun server that proxies GitHub release assets, rewrites manifests back to its own `/download/...` endpoints, and requires a bearer token for artifact downloads.
-
-## Layout
-
-```text
-examples/
-  github-releases-app/
-  authenticated-http-app/
-  authenticated-release-proxy/
-```
-
-## Generate bindings
-
-The Wails examples use static assets instead of a Vite frontend. If you change any exported Go service methods, regenerate the bindings from the example directory:
-
-```bash
-go run github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.74 generate bindings -b -d assets/bindings -names .
-```
 
 ## GitHub Releases Example
 
@@ -95,4 +78,3 @@ Routes:
 
 - Both Wails examples compute the current executable checksum automatically when possible so delta updates can be selected when the local binary matches a released artifact.
 - Applying updates while running under `go run` targets a temporary Go build cache executable, so packaged builds are the realistic way to exercise replace-and-restart behavior.
-

@@ -5,34 +5,30 @@ sidebar_position: 1
 
 # wailsrel
 
-`wailsrel` is a release and update toolkit for Wails v3 applications. It covers the path from versioning and build orchestration through signing, release packaging, and delta updates.
+`wailsrel` is for Wails consumer projects that need a release pipeline and an updater client.
 
-## What is in the repo today
+It covers:
 
-- A Cobra-based CLI with `init`, `status`, `doctor`, `bump`, `build`, `sign`, and `delta`
-- YAML config loading with environment expansion, defaults, and validation
-- Version discovery and changelog generation from git tags
-- Multi-target Wails builds with artifact staging and signing
-- Delta patch generation against cached prior release artifacts
-- Reference release gateways in both Go and Bun-style JavaScript
+- build artifacts for one or more OS and architecture targets
+- platform signing and macOS notarization
+- release manifests and optional delta patch manifests
+- GitHub Releases or custom HTTP delivery
+- optional frontend bundles and release channels
 
-## Why this site exists
+## Pick a delivery model
 
-This Docusaurus site gives the project a versionable docs surface that can be published to GitHub Pages from `main`. It is intentionally separate from the Go toolchain, so docs changes do not affect the CLI build.
+- GitHub Releases: publish assets directly to a GitHub release and point clients at `https://github.com/<owner>/<repo>/releases/latest/download/manifest.json`
+- Custom HTTP: publish a stable `/manifest.json`, `/delta/manifest.json`, and `/download/{tag}/{asset_name}` surface under your own domain
+- Authenticated proxy: keep GitHub as the storage backend and expose a token-protected or JWT-protected HTTP facade
 
-## Local development
-
-From the repository root:
-
-```bash
-cd website
-npm install
-npm start
-```
-
-The dev server will open a hot-reloading docs site locally. For a production build:
+## Standard flow
 
 ```bash
-cd website
-npm run build
+wailsrel init --name "MyApp" --identifier "com.example.myapp"
+wailsrel doctor
+wailsrel build
+wailsrel delta
+wailsrel release
 ```
+
+Use [Getting Started](./getting-started.md) to create the config, [CI and GitHub Actions](./ci.md) for release automation, and [Client and Hosting](./github-pages.md) for runtime integration.
