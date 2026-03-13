@@ -10,6 +10,9 @@ const log = document.getElementById("log");
 const refreshButton = document.getElementById("refresh-state");
 const checkButton = document.getElementById("check-update");
 const applyButton = document.getElementById("apply-update");
+const restartButton = document.getElementById("restart-app");
+
+let currentState = null;
 
 function renderPairs(container, pairs) {
     container.innerHTML = "";
@@ -52,15 +55,21 @@ function formatBytes(value) {
 }
 
 function renderState(state) {
+    currentState = state;
+    const metadata = state.metadata || {};
+
     renderPairs(stateGrid, [
-        ["App", state.appName],
-        ["Source", state.sourceLabel],
-        ["Repository", state.repository],
+        ["App", metadata.appName],
+        ["Source", metadata.sourceLabel],
+        ["Repository", metadata.repository],
         ["Manifest URL", state.manifestURL],
         ["Current version", state.currentVersion],
         ["Current hash", state.currentHash],
         ["Channel", state.channel],
         ["Native compat", state.nativeCompat],
+        ["Last checked", state.lastCheckedAt],
+        ["Pending restart", state.pendingRestart ? "Yes" : "No"],
+        ["Last error", state.lastError],
         ["Target path", state.targetPath],
         ["Temp dir", state.tempDir],
     ]);
@@ -73,12 +82,15 @@ function renderState(state) {
     }
 }
 
-function renderResult(result) {
+function renderResult(result, state = currentState) {
+    const pendingRestart = Boolean(state?.pendingRestart);
+
     if (!result || !result.available || !result.update) {
         renderPairs(resultGrid, [
             ["Checked at", result?.checkedAt || new Date().toISOString()],
-            ["Available", "No"],
-            ["Message", result?.error || "No update cached."],
+            ["Available", pendingRestart ? "Staged" : "No"],
+            ["Pending restart", pendingRestart ? "Yes" : "No"],
+            ["Message", result?.error || (pendingRestart ? "Update staged. Restart to launch it." : "No update cached.")],
         ]);
         return;
     }
@@ -86,14 +98,17 @@ function renderResult(result) {
     renderPairs(resultGrid, [
         ["Checked at", result.checkedAt],
         ["Available", "Yes"],
+        ["Pending restart", pendingRestart ? "Yes" : "No"],
         ["Version", result.update.version],
         ["Channel", result.update.channel],
+        ["Release notes", result.update.releaseNotes],
         ["Artifact URL", result.update.artifactURL],
         ["Artifact hash", result.update.artifactHash],
         ["Artifact size", formatBytes(result.update.artifactSize)],
         ["Delta URL", result.update.deltaURL],
         ["Delta hash", result.update.deltaHash],
         ["Delta size", formatBytes(result.update.deltaSize)],
+        ["Delta from hash", result.update.deltaFromHash],
         ["Mandatory", result.update.mandatory ? "Yes" : "No"],
     ]);
 }
@@ -109,13 +124,21 @@ function renderProgress(progress) {
 }
 
 async function refreshState() {
-    renderState(await UpdateService.GetState());
+    const state = await UpdateService.GetState();
+    renderState(state);
+    renderResult({
+        checkedAt: state.lastCheckedAt || new Date().toISOString(),
+        available: Boolean(state.availableUpdate),
+        update: state.availableUpdate,
+        error: state.lastError,
+    }, state);
 }
 
 function setBusy(isBusy) {
     refreshButton.disabled = isBusy;
     checkButton.disabled = isBusy;
     applyButton.disabled = isBusy;
+    restartButton.disabled = isBusy;
 }
 
 refreshButton.addEventListener("click", async () => {
@@ -126,7 +149,7 @@ checkButton.addEventListener("click", async () => {
     setBusy(true);
     try {
         const result = await UpdateService.CheckNow();
-        renderResult(result);
+        renderResult(result, currentState);
         await refreshState();
         if (result.error) {
             pushLog("error", result.error, result.checkedAt);
@@ -139,12 +162,35 @@ checkButton.addEventListener("click", async () => {
 applyButton.addEventListener("click", async () => {
     setBusy(true);
     try {
-        const result = await UpdateService.ApplyLastUpdate();
+        const result = await UpdateService.ApplyPending();
         pushLog(result.error ? "error" : "info", result.error || result.message, result.startedAt);
         await refreshState();
     } finally {
         setBusy(false);
     }
+});
+
+restartButton.addEventListener("click", async () => {
+    setBusy(true);
+    try {
+        const result = await UpdateService.Restart();
+        pushLog(result.error ? "error" : "info", result.error || result.message, result.startedAt);
+        if (!result.restarted) {
+            await refreshState();
+        }
+    } finally {
+        setBusy(false);
+    }
+});
+
+Events.On("update:state", (event) => {
+    renderState(event.data);
+    renderResult({
+        checkedAt: event.data.lastCheckedAt || new Date().toISOString(),
+        available: Boolean(event.data.availableUpdate),
+        update: event.data.availableUpdate,
+        error: event.data.lastError,
+    }, event.data);
 });
 
 Events.On("update:log", (event) => {
@@ -155,18 +201,9 @@ Events.On("update:progress", (event) => {
     renderProgress(event.data);
 });
 
-Events.On("update:available", (event) => {
-    renderResult({
-        checkedAt: new Date().toISOString(),
-        available: true,
-        update: event.data,
-    });
-});
-
 async function bootstrap() {
     await refreshState();
-    renderResult({ checkedAt: new Date().toISOString(), available: false });
-    pushLog("info", "Ready. Configure the GitHub repository or manifest URL and click check.");
+    pushLog("info", "Ready. Configure the GitHub repository or manifest URL, then check, stage, and restart explicitly.");
 }
 
 bootstrap().catch((error) => {

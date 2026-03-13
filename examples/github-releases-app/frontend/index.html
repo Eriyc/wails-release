@@ -32,10 +32,11 @@
                 </div>
                 <div class="actions">
                     <button id="check-update" class="primary">Check for update</button>
-                    <button id="apply-update">Download and apply last update</button>
+                    <button id="apply-update">Download and stage update</button>
+                    <button id="restart-app">Restart into staged update</button>
                 </div>
                 <p class="hint">
-                    The apply step uses the current executable path. Packaged builds are the realistic way to test the full replacement flow.
+                    <code>ApplyPending()</code> stages the replacement binary without quitting. Restart stays explicit so you can choose when to relaunch.
                 </p>
             </section>
 

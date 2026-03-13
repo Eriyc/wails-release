@@ -32,10 +32,11 @@
                 </div>
                 <div class="actions">
                     <button id="check-update" class="primary">Check for update</button>
-                    <button id="apply-update">Download and apply last update</button>
+                    <button id="apply-update">Download and stage update</button>
+                    <button id="restart-app">Restart into staged update</button>
                 </div>
                 <p class="hint">
-                    This example adds <code>Authorization: Bearer &lt;token&gt;</code> to all updater HTTP requests through a custom Go transport.
+                    This example adds <code>Authorization: Bearer &lt;token&gt;</code> to all updater HTTP requests through a reusable Go transport helper.
                 </p>
             </section>
 

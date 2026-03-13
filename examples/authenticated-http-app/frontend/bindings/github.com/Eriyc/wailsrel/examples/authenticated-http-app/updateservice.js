@@ -8,19 +8,19 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as wailsupdate$0 from "../../pkg/wailsupdate/models.js";
 
 /**
- * @returns {$CancellablePromise<$models.actionResponse>}
+ * @returns {$CancellablePromise<wailsupdate$0.ActionResponse>}
  */
-export function ApplyLastUpdate() {
-    return $Call.ByID(4091454357).then(/** @type {($result: any) => any} */(($result) => {
+export function ApplyPending() {
+    return $Call.ByID(2857970655).then(/** @type {($result: any) => any} */(($result) => {
         return $$createType0($result);
     }));
 }
 
 /**
- * @returns {$CancellablePromise<$models.checkResponse>}
+ * @returns {$CancellablePromise<wailsupdate$0.CheckResponse>}
  */
 export function CheckNow() {
     return $Call.ByID(3792226688).then(/** @type {($result: any) => any} */(($result) => {
@@ -29,7 +29,7 @@ export function CheckNow() {
 }
 
 /**
- * @returns {$CancellablePromise<$models.appState>}
+ * @returns {$CancellablePromise<wailsupdate$0.State>}
  */
 export function GetState() {
     return $Call.ByID(1020347649).then(/** @type {($result: any) => any} */(($result) => {
@@ -37,7 +37,16 @@ export function GetState() {
     }));
 }
 
+/**
+ * @returns {$CancellablePromise<wailsupdate$0.ActionResponse>}
+ */
+export function Restart() {
+    return $Call.ByID(3205679179).then(/** @type {($result: any) => any} */(($result) => {
+        return $$createType0($result);
+    }));
+}
+
 // Private type creation functions
-const $$createType0 = $models.actionResponse.createFrom;
-const $$createType1 = $models.checkResponse.createFrom;
-const $$createType2 = $models.appState.createFrom;
+const $$createType0 = wailsupdate$0.ActionResponse.createFrom;
+const $$createType1 = wailsupdate$0.CheckResponse.createFrom;
+const $$createType2 = wailsupdate$0.State.createFrom;

@@ -4,6 +4,7 @@ import (
 	"embed"
 	"log"
 
+	"github.com/Eriyc/wailsrel/pkg/wailsupdate"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -11,9 +12,7 @@ import (
 var assets embed.FS
 
 func init() {
-	application.RegisterEvent[logEvent]("update:log")
-	application.RegisterEvent[progressEvent]("update:progress")
-	application.RegisterEvent[updateView]("update:available")
+	wailsupdate.RegisterEvents("update")
 }
 
 func main() {

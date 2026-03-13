@@ -6,21 +6,4 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-ignore: Unused imports
-import * as main$0 from "../../../../Eriyc/wailsrel/examples/authenticated-http-app/models.js";
-
-function configure() {
-    Object.freeze(Object.assign($Create.Events, {
-        "update:available": $$createType0,
-        "update:log": $$createType1,
-        "update:progress": $$createType2,
-    }));
-}
-
-// Private type creation functions
-const $$createType0 = main$0.updateView.createFrom;
-const $$createType1 = main$0.logEvent.createFrom;
-const $$createType2 = main$0.progressEvent.createFrom;
-
-configure();
+Object.freeze($Create.Events);

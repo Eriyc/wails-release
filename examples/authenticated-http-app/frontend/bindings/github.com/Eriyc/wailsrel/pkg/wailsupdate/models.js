@@ -6,10 +6,10 @@
 // @ts-ignore: Unused imports
 import { Create as $Create } from "@wailsio/runtime";
 
-export class actionResponse {
+export class ActionResponse {
     /**
-     * Creates a new actionResponse instance.
-     * @param {Partial<actionResponse>} [$$source = {}] - The source object to create the actionResponse.
+     * Creates a new ActionResponse instance.
+     * @param {Partial<ActionResponse>} [$$source = {}] - The source object to create the ActionResponse.
      */
     constructor($$source = {}) {
         if (!("startedAt" in $$source)) {
@@ -25,6 +25,13 @@ export class actionResponse {
              * @type {boolean}
              */
             this["applied"] = false;
+        }
+        if (!("restarted" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["restarted"] = false;
         }
         if (!("message" in $$source)) {
             /**
@@ -45,43 +52,75 @@ export class actionResponse {
     }
 
     /**
-     * Creates a new actionResponse instance from a string or object.
+     * Creates a new ActionResponse instance from a string or object.
      * @param {any} [$$source = {}]
-     * @returns {actionResponse}
+     * @returns {ActionResponse}
      */
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new actionResponse(/** @type {Partial<actionResponse>} */($$parsedSource));
+        return new ActionResponse(/** @type {Partial<ActionResponse>} */($$parsedSource));
     }
 }
 
-export class appState {
+export class CheckResponse {
     /**
-     * Creates a new appState instance.
-     * @param {Partial<appState>} [$$source = {}] - The source object to create the appState.
+     * Creates a new CheckResponse instance.
+     * @param {Partial<CheckResponse>} [$$source = {}] - The source object to create the CheckResponse.
      */
     constructor($$source = {}) {
-        if (!("appName" in $$source)) {
+        if (!("checkedAt" in $$source)) {
             /**
              * @member
              * @type {string}
              */
-            this["appName"] = "";
+            this["checkedAt"] = "";
         }
-        if (!("sourceLabel" in $$source)) {
+        if (!("available" in $$source)) {
             /**
              * @member
-             * @type {string}
+             * @type {boolean}
              */
-            this["sourceLabel"] = "";
+            this["available"] = false;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {UpdateView | null | undefined}
+             */
+            this["update"] = undefined;
         }
         if (/** @type {any} */(false)) {
             /**
              * @member
              * @type {string | undefined}
              */
-            this["repository"] = undefined;
+            this["error"] = undefined;
         }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CheckResponse instance from a string or object.
+     * @param {any} [$$source = {}]
+     * @returns {CheckResponse}
+     */
+    static createFrom($$source = {}) {
+        const $$createField2_0 = $$createType1;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("update" in $$parsedSource) {
+            $$parsedSource["update"] = $$createField2_0($$parsedSource["update"]);
+        }
+        return new CheckResponse(/** @type {Partial<CheckResponse>} */($$parsedSource));
+    }
+}
+
+export class State {
+    /**
+     * Creates a new State instance.
+     * @param {Partial<State>} [$$source = {}] - The source object to create the State.
+     */
+    constructor($$source = {}) {
         if (!("manifestURL" in $$source)) {
             /**
              * @member
@@ -134,163 +173,76 @@ export class appState {
         if (/** @type {any} */(false)) {
             /**
              * @member
-             * @type {string[] | undefined}
+             * @type {string | undefined}
              */
-            this["notes"] = undefined;
+            this["lastCheckedAt"] = undefined;
         }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new appState instance from a string or object.
-     * @param {any} [$$source = {}]
-     * @returns {appState}
-     */
-    static createFrom($$source = {}) {
-        const $$createField10_0 = $$createType0;
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("notes" in $$parsedSource) {
-            $$parsedSource["notes"] = $$createField10_0($$parsedSource["notes"]);
-        }
-        return new appState(/** @type {Partial<appState>} */($$parsedSource));
-    }
-}
-
-export class checkResponse {
-    /**
-     * Creates a new checkResponse instance.
-     * @param {Partial<checkResponse>} [$$source = {}] - The source object to create the checkResponse.
-     */
-    constructor($$source = {}) {
-        if (!("checkedAt" in $$source)) {
-            /**
-             * @member
-             * @type {string}
-             */
-            this["checkedAt"] = "";
-        }
-        if (!("available" in $$source)) {
+        if (!("pendingRestart" in $$source)) {
             /**
              * @member
              * @type {boolean}
              */
-            this["available"] = false;
+            this["pendingRestart"] = false;
         }
         if (/** @type {any} */(false)) {
             /**
              * @member
-             * @type {updateView | null | undefined}
+             * @type {UpdateView | null | undefined}
              */
-            this["update"] = undefined;
+            this["availableUpdate"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {{ [_ in string]?: string } | undefined}
+             */
+            this["metadata"] = undefined;
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string[] | undefined}
+             */
+            this["notes"] = undefined;
         }
         if (/** @type {any} */(false)) {
             /**
              * @member
              * @type {string | undefined}
              */
-            this["error"] = undefined;
+            this["lastError"] = undefined;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new checkResponse instance from a string or object.
+     * Creates a new State instance from a string or object.
      * @param {any} [$$source = {}]
-     * @returns {checkResponse}
+     * @returns {State}
      */
     static createFrom($$source = {}) {
-        const $$createField2_0 = $$createType2;
+        const $$createField9_0 = $$createType1;
+        const $$createField10_0 = $$createType2;
+        const $$createField11_0 = $$createType3;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        if ("update" in $$parsedSource) {
-            $$parsedSource["update"] = $$createField2_0($$parsedSource["update"]);
+        if ("availableUpdate" in $$parsedSource) {
+            $$parsedSource["availableUpdate"] = $$createField9_0($$parsedSource["availableUpdate"]);
         }
-        return new checkResponse(/** @type {Partial<checkResponse>} */($$parsedSource));
+        if ("metadata" in $$parsedSource) {
+            $$parsedSource["metadata"] = $$createField10_0($$parsedSource["metadata"]);
+        }
+        if ("notes" in $$parsedSource) {
+            $$parsedSource["notes"] = $$createField11_0($$parsedSource["notes"]);
+        }
+        return new State(/** @type {Partial<State>} */($$parsedSource));
     }
 }
 
-export class logEvent {
+export class UpdateView {
     /**
-     * Creates a new logEvent instance.
-     * @param {Partial<logEvent>} [$$source = {}] - The source object to create the logEvent.
-     */
-    constructor($$source = {}) {
-        if (!("level" in $$source)) {
-            /**
-             * @member
-             * @type {string}
-             */
-            this["level"] = "";
-        }
-        if (!("message" in $$source)) {
-            /**
-             * @member
-             * @type {string}
-             */
-            this["message"] = "";
-        }
-        if (!("at" in $$source)) {
-            /**
-             * @member
-             * @type {string}
-             */
-            this["at"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new logEvent instance from a string or object.
-     * @param {any} [$$source = {}]
-     * @returns {logEvent}
-     */
-    static createFrom($$source = {}) {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new logEvent(/** @type {Partial<logEvent>} */($$parsedSource));
-    }
-}
-
-export class progressEvent {
-    /**
-     * Creates a new progressEvent instance.
-     * @param {Partial<progressEvent>} [$$source = {}] - The source object to create the progressEvent.
-     */
-    constructor($$source = {}) {
-        if (!("downloaded" in $$source)) {
-            /**
-             * @member
-             * @type {number}
-             */
-            this["downloaded"] = 0;
-        }
-        if (!("total" in $$source)) {
-            /**
-             * @member
-             * @type {number}
-             */
-            this["total"] = 0;
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new progressEvent instance from a string or object.
-     * @param {any} [$$source = {}]
-     * @returns {progressEvent}
-     */
-    static createFrom($$source = {}) {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new progressEvent(/** @type {Partial<progressEvent>} */($$parsedSource));
-    }
-}
-
-export class updateView {
-    /**
-     * Creates a new updateView instance.
-     * @param {Partial<updateView>} [$$source = {}] - The source object to create the updateView.
+     * Creates a new UpdateView instance.
+     * @param {Partial<UpdateView>} [$$source = {}] - The source object to create the UpdateView.
      */
     constructor($$source = {}) {
         if (!("version" in $$source)) {
@@ -306,6 +258,20 @@ export class updateView {
              * @type {string}
              */
             this["channel"] = "";
+        }
+        if (/** @type {any} */(false)) {
+            /**
+             * @member
+             * @type {string | undefined}
+             */
+            this["releaseNotes"] = undefined;
+        }
+        if (!("mandatory" in $$source)) {
+            /**
+             * @member
+             * @type {boolean}
+             */
+            this["mandatory"] = false;
         }
         if (!("artifactURL" in $$source)) {
             /**
@@ -349,29 +315,30 @@ export class updateView {
              */
             this["deltaSize"] = undefined;
         }
-        if (!("mandatory" in $$source)) {
+        if (/** @type {any} */(false)) {
             /**
              * @member
-             * @type {boolean}
+             * @type {string | undefined}
              */
-            this["mandatory"] = false;
+            this["deltaFromHash"] = undefined;
         }
 
         Object.assign(this, $$source);
     }
 
     /**
-     * Creates a new updateView instance from a string or object.
+     * Creates a new UpdateView instance from a string or object.
      * @param {any} [$$source = {}]
-     * @returns {updateView}
+     * @returns {UpdateView}
      */
     static createFrom($$source = {}) {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new updateView(/** @type {Partial<updateView>} */($$parsedSource));
+        return new UpdateView(/** @type {Partial<UpdateView>} */($$parsedSource));
     }
 }
 
 // Private type creation functions
-const $$createType0 = $Create.Array($Create.Any);
-const $$createType1 = updateView.createFrom;
-const $$createType2 = $Create.Nullable($$createType1);
+const $$createType0 = UpdateView.createFrom;
+const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $Create.Map($Create.Any, $Create.Any);
+const $$createType3 = $Create.Array($Create.Any);
