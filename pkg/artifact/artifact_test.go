@@ -54,6 +54,7 @@ func TestPrepareUploadDirAndGitHubOutput(t *testing.T) {
 	t.Setenv("GITHUB_OUTPUT", githubOutput)
 
 	result := OutputResult{
+		Version:      "1.2.3",
 		ManifestPath: manifestFile,
 		Artifacts:    []string{artifactFile},
 	}
@@ -67,7 +68,7 @@ func TestPrepareUploadDirAndGitHubOutput(t *testing.T) {
 	}
 
 	text := string(data)
-	for _, expected := range []string{"manifest_path=", "artifact_dir=", "artifact_count=1"} {
+	for _, expected := range []string{"version=1.2.3", "manifest_path=", "artifact_dir=", "artifact_count=1"} {
 		if !strings.Contains(text, expected) {
 			t.Fatalf("expected %q in github output, got %q", expected, text)
 		}

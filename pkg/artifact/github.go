@@ -25,6 +25,7 @@ func WriteGitHubOutput(result OutputResult) error {
 	}
 
 	lines := []string{
+		fmt.Sprintf("version=%s", result.Version),
 		fmt.Sprintf("manifest_path=%s", result.ManifestPath),
 		fmt.Sprintf("artifact_dir=%s", artifactDir),
 		fmt.Sprintf("artifact_count=%d", len(result.Artifacts)),

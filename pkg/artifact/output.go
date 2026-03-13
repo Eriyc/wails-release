@@ -8,6 +8,7 @@ import (
 )
 
 type OutputResult struct {
+	Version      string
 	ManifestPath string
 	Artifacts    []string
 }
