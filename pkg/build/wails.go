@@ -11,7 +11,7 @@ import (
 	"slices"
 	"time"
 
-	internalexec "github.com/you/wailsrel/internal/exec"
+	internalexec "github.com/Eriyc/wailsrel/internal/exec"
 )
 
 func RequiredTools(target Target) []string {

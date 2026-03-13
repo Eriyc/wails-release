@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/sign"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/sign"
 )
 
 type doctorCheck struct {

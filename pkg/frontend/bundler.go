@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	internalexec "github.com/you/wailsrel/internal/exec"
-	"github.com/you/wailsrel/pkg/build"
+	internalexec "github.com/Eriyc/wailsrel/internal/exec"
+	"github.com/Eriyc/wailsrel/pkg/build"
 )
 
 type BundleManifest struct {

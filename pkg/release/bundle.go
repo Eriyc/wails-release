@@ -11,9 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
 
 const (
@@ -45,18 +46,30 @@ type Bundle struct {
 	ManifestPath      string
 	DeltaManifestPath string
 	Artifacts         []PublishedAsset
+	FrontendBundles   []PublishedFrontendBundle
 	Uploads           []UploadAsset
 }
 
+type PublishedFrontendBundle struct {
+	Channel    string
+	Version    string
+	CompatID   string
+	AssetName  string
+	SourcePath string
+	Checksum   string
+	Size       int64
+}
+
 type BundleOptions struct {
-	App       config.AppConfig
-	OutputDir string
-	TempDir   string
-	Tag       string
-	Version   string
-	Resolver  Resolver
-	Artifacts []build.Artifact
-	Delta     *delta.Result
+	App             config.AppConfig
+	OutputDir       string
+	TempDir         string
+	Tag             string
+	Version         string
+	Resolver        Resolver
+	Artifacts       []build.Artifact
+	FrontendBundles []frontend.BundleArtifact
+	Delta           *delta.Result
 }
 
 func PrepareBundle(opts BundleOptions) (*Bundle, error) {
@@ -73,7 +86,7 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 	}
 
 	publishedArtifacts := make([]PublishedAsset, 0, len(opts.Artifacts))
-	uploads := make([]UploadAsset, 0, len(opts.Artifacts)+2)
+	uploads := make([]UploadAsset, 0, len(opts.Artifacts)+len(opts.FrontendBundles)+2)
 	for _, artifact := range opts.Artifacts {
 		sourcePath := filepath.Join(opts.OutputDir, filepath.FromSlash(artifact.Path))
 		info, err := os.Stat(sourcePath)
@@ -132,6 +145,40 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 		return publishedArtifacts[i].LogicalPath < publishedArtifacts[j].LogicalPath
 	})
 
+	publishedFrontendBundles := make([]PublishedFrontendBundle, 0, len(opts.FrontendBundles))
+	for _, bundle := range opts.FrontendBundles {
+		if strings.TrimSpace(bundle.Path) == "" {
+			continue
+		}
+		assetName := filepath.Base(bundle.Path)
+		checksum, size, err := uploadedAssetMetadata(bundle.Path)
+		if err != nil {
+			return nil, err
+		}
+		version := firstNonEmpty(bundle.Manifest.Version, bundle.Manifest.BundleVersion, opts.Version)
+		compatID := firstNonEmpty(bundle.Manifest.CompatID, fmt.Sprintf("%d", bundle.Manifest.CompatVersion))
+		publishedFrontendBundles = append(publishedFrontendBundles, PublishedFrontendBundle{
+			Channel:    bundle.Manifest.Channel,
+			Version:    version,
+			CompatID:   compatID,
+			AssetName:  assetName,
+			SourcePath: bundle.Path,
+			Checksum:   checksum,
+			Size:       size,
+		})
+		uploads = append(uploads, UploadAsset{
+			Name:        assetName,
+			Path:        bundle.Path,
+			ContentType: contentTypeForName(assetName),
+		})
+	}
+	sort.Slice(publishedFrontendBundles, func(i, j int) bool {
+		if publishedFrontendBundles[i].Channel == publishedFrontendBundles[j].Channel {
+			return publishedFrontendBundles[i].AssetName < publishedFrontendBundles[j].AssetName
+		}
+		return publishedFrontendBundles[i].Channel < publishedFrontendBundles[j].Channel
+	})
+
 	manifest := &Manifest{
 		SchemaVersion: 1,
 		App: ManifestApp{
@@ -161,6 +208,17 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 			Metadata:  cloneMetadata(artifact.Metadata),
 		})
 	}
+	manifest.Patches = buildManifestPatches(opts)
+	for _, bundle := range publishedFrontendBundles {
+		manifest.FrontendBundles = append(manifest.FrontendBundles, ManifestFrontendBundle{
+			Channel:  bundle.Channel,
+			Version:  bundle.Version,
+			CompatID: bundle.CompatID,
+			URL:      opts.Resolver.ArtifactURL(opts.Tag, bundle.AssetName),
+			Checksum: bundle.Checksum,
+			Size:     bundle.Size,
+		})
+	}
 
 	manifestPath := filepath.Join(opts.OutputDir, ManifestAssetName)
 	if opts.Delta != nil && opts.Delta.ManifestPath != "" {
@@ -179,10 +237,11 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 	})
 
 	bundle := &Bundle{
-		Manifest:     manifest,
-		ManifestPath: manifestPath,
-		Artifacts:    publishedArtifacts,
-		Uploads:      uploads,
+		Manifest:        manifest,
+		ManifestPath:    manifestPath,
+		Artifacts:       publishedArtifacts,
+		FrontendBundles: publishedFrontendBundles,
+		Uploads:         uploads,
 	}
 
 	if opts.Delta != nil && opts.Delta.ManifestPath != "" {
@@ -242,6 +301,31 @@ func publishedDeltaManifest(outputDir string, generated []delta.Generated, patch
 		return nil, err
 	}
 	return manifest, nil
+}
+
+func buildManifestPatches(opts BundleOptions) []ManifestPatch {
+	if opts.Delta == nil {
+		return nil
+	}
+
+	patches := make([]ManifestPatch, 0, len(opts.Delta.Generated))
+	for _, generated := range opts.Delta.Generated {
+		artifact, ok := findArtifact(opts.Artifacts, generated.Artifact)
+		if !ok {
+			continue
+		}
+		assetName := deltaAssetName(opts.App.Name, opts.Version, generated.FromVersion, artifact)
+		patches = append(patches, ManifestPatch{
+			FromVersion:  generated.FromVersion,
+			Artifact:     generated.Artifact,
+			URL:          opts.Resolver.ArtifactURL(opts.Tag, assetName),
+			Checksum:     generated.Checksum,
+			FromChecksum: generated.FromChecksum,
+			ToChecksum:   generated.ToChecksum,
+			Size:         generated.Size,
+		})
+	}
+	return patches
 }
 
 func findArtifact(artifacts []build.Artifact, logicalPath string) (build.Artifact, bool) {
@@ -421,6 +505,15 @@ func cloneMetadata(values map[string]string) map[string]string {
 		cloned[key] = value
 	}
 	return cloned
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
 }
 
 var nowUTC = func() time.Time {

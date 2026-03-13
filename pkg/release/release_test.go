@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
 
 func TestResolvers(t *testing.T) {
@@ -188,5 +189,190 @@ func TestPrepareBundleCanonicalNamesAndManifest(t *testing.T) {
 	}
 	if _, err := os.Stat(bundle.DeltaManifestPath); err != nil {
 		t.Fatalf("expected delta manifest file %s: %v", bundle.DeltaManifestPath, err)
+	}
+}
+
+func TestPrepareBundleIncludesFrontendBundles(t *testing.T) {
+	root := t.TempDir()
+	outputDir := filepath.Join(root, "dist")
+
+	artifactPath := filepath.Join(outputDir, "linux", "amd64", "MyApp.AppImage")
+	if err := os.MkdirAll(filepath.Dir(artifactPath), 0o755); err != nil {
+		t.Fatalf("mkdir artifact: %v", err)
+	}
+	if err := os.WriteFile(artifactPath, []byte("binary"), 0o644); err != nil {
+		t.Fatalf("write artifact: %v", err)
+	}
+
+	stableBundlePath := filepath.Join(outputDir, "frontend-stable-1.2.3.zip")
+	if err := os.WriteFile(stableBundlePath, []byte("stable frontend bundle"), 0o644); err != nil {
+		t.Fatalf("write stable frontend bundle: %v", err)
+	}
+
+	betaBundlePath := filepath.Join(outputDir, "frontend-beta-1.2.3.zip")
+	if err := os.WriteFile(betaBundlePath, []byte("beta frontend bundle"), 0o644); err != nil {
+		t.Fatalf("write beta frontend bundle: %v", err)
+	}
+
+	nowUTC = func() time.Time {
+		return time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC)
+	}
+	defer func() {
+		nowUTC = func() time.Time { return time.Now().UTC() }
+	}()
+
+	bundle, err := PrepareBundle(BundleOptions{
+		App: config.AppConfig{
+			Name:       "MyApp",
+			Identifier: "com.example.myapp",
+		},
+		OutputDir: outputDir,
+		TempDir:   filepath.Join(root, ".release"),
+		Tag:       "v1.2.3",
+		Version:   "1.2.3",
+		Resolver:  NewHTTPResolver("https://releases.example.com", "/manifest.json", "/delta/manifest.json", "/download"),
+		Artifacts: []build.Artifact{
+			{
+				Path:     "linux/amd64/MyApp.AppImage",
+				OS:       "linux",
+				Arch:     "amd64",
+				Format:   "appimage",
+				Checksum: "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+				Size:     6,
+			},
+		},
+		FrontendBundles: []frontend.BundleArtifact{
+			{
+				Path: betaBundlePath,
+				Manifest: frontend.BundleManifest{
+					Channel:  "beta",
+					Version:  "1.2.3-beta.1",
+					CompatID: "web-v2",
+				},
+			},
+			{
+				Path: stableBundlePath,
+				Manifest: frontend.BundleManifest{
+					Channel:       "stable",
+					BundleVersion: "1.2.3",
+					CompatVersion: 2,
+				},
+			},
+			{
+				Manifest: frontend.BundleManifest{
+					Channel: "ignored",
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("prepare bundle: %v", err)
+	}
+
+	if len(bundle.FrontendBundles) != 2 {
+		t.Fatalf("expected 2 published frontend bundles, got %d", len(bundle.FrontendBundles))
+	}
+
+	expectedFrontend := []struct {
+		channel   string
+		version   string
+		compatID  string
+		assetName string
+		path      string
+	}{
+		{
+			channel:   "beta",
+			version:   "1.2.3-beta.1",
+			compatID:  "web-v2",
+			assetName: "frontend-beta-1.2.3.zip",
+			path:      betaBundlePath,
+		},
+		{
+			channel:   "stable",
+			version:   "1.2.3",
+			compatID:  "2",
+			assetName: "frontend-stable-1.2.3.zip",
+			path:      stableBundlePath,
+		},
+	}
+
+	for i, expected := range expectedFrontend {
+		published := bundle.FrontendBundles[i]
+		if published.Channel != expected.channel {
+			t.Fatalf("frontend bundle %d: expected channel %q, got %q", i, expected.channel, published.Channel)
+		}
+		if published.Version != expected.version {
+			t.Fatalf("frontend bundle %d: expected version %q, got %q", i, expected.version, published.Version)
+		}
+		if published.CompatID != expected.compatID {
+			t.Fatalf("frontend bundle %d: expected compat id %q, got %q", i, expected.compatID, published.CompatID)
+		}
+		if published.AssetName != expected.assetName {
+			t.Fatalf("frontend bundle %d: expected asset name %q, got %q", i, expected.assetName, published.AssetName)
+		}
+		if published.SourcePath != expected.path {
+			t.Fatalf("frontend bundle %d: expected source path %q, got %q", i, expected.path, published.SourcePath)
+		}
+
+		checksum, err := build.ComputeChecksum(expected.path)
+		if err != nil {
+			t.Fatalf("compute checksum for %s: %v", expected.path, err)
+		}
+		info, err := os.Stat(expected.path)
+		if err != nil {
+			t.Fatalf("stat %s: %v", expected.path, err)
+		}
+		if published.Checksum != "sha256:"+checksum {
+			t.Fatalf("frontend bundle %d: expected checksum %q, got %q", i, "sha256:"+checksum, published.Checksum)
+		}
+		if published.Size != info.Size() {
+			t.Fatalf("frontend bundle %d: expected size %d, got %d", i, info.Size(), published.Size)
+		}
+	}
+
+	if len(bundle.Manifest.FrontendBundles) != 2 {
+		t.Fatalf("expected 2 manifest frontend bundles, got %d", len(bundle.Manifest.FrontendBundles))
+	}
+	for i, expected := range expectedFrontend {
+		entry := bundle.Manifest.FrontendBundles[i]
+		if entry.Channel != expected.channel {
+			t.Fatalf("manifest frontend bundle %d: expected channel %q, got %q", i, expected.channel, entry.Channel)
+		}
+		if entry.Version != expected.version {
+			t.Fatalf("manifest frontend bundle %d: expected version %q, got %q", i, expected.version, entry.Version)
+		}
+		if entry.CompatID != expected.compatID {
+			t.Fatalf("manifest frontend bundle %d: expected compat id %q, got %q", i, expected.compatID, entry.CompatID)
+		}
+		expectedURL := "https://releases.example.com/download/v1.2.3/" + expected.assetName
+		if entry.URL != expectedURL {
+			t.Fatalf("manifest frontend bundle %d: expected url %q, got %q", i, expectedURL, entry.URL)
+		}
+		if entry.Checksum != bundle.FrontendBundles[i].Checksum {
+			t.Fatalf("manifest frontend bundle %d: expected checksum %q, got %q", i, bundle.FrontendBundles[i].Checksum, entry.Checksum)
+		}
+		if entry.Size != bundle.FrontendBundles[i].Size {
+			t.Fatalf("manifest frontend bundle %d: expected size %d, got %d", i, bundle.FrontendBundles[i].Size, entry.Size)
+		}
+	}
+
+	if err := ValidateManifest(bundle.Manifest); err != nil {
+		t.Fatalf("validate manifest: %v", err)
+	}
+
+	uploadNames := make([]string, 0, len(bundle.Uploads))
+	for _, upload := range bundle.Uploads {
+		uploadNames = append(uploadNames, upload.Name)
+	}
+	slices.Sort(uploadNames)
+	expectedUploads := []string{
+		ManifestAssetName,
+		"MyApp-1.2.3-linux-amd64-appimage.AppImage",
+		"frontend-beta-1.2.3.zip",
+		"frontend-stable-1.2.3.zip",
+	}
+	slices.Sort(expectedUploads)
+	if !slices.Equal(uploadNames, expectedUploads) {
+		t.Fatalf("unexpected upload names %v", uploadNames)
 	}
 }

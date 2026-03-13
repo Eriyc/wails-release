@@ -8,12 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Eriyc/wailsrel/internal/ci"
+	artifactpkg "github.com/Eriyc/wailsrel/pkg/artifact"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
+	releasepkg "github.com/Eriyc/wailsrel/pkg/release"
 	"github.com/spf13/cobra"
-	artifactpkg "github.com/you/wailsrel/pkg/artifact"
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/delta"
-	releasepkg "github.com/you/wailsrel/pkg/release"
 )
 
 type releaseView struct {
@@ -29,13 +31,15 @@ type releaseView struct {
 }
 
 type releaseDeps struct {
-	build           func(context.Context, string, *config.Config) ([]build.Artifact, error)
-	discoverBuild   func(string) ([]build.Artifact, error)
-	generateDelta   func(context.Context, string, *config.Config, string) (*delta.Result, error)
-	discoverDelta   func(string) (*delta.Result, error)
-	prepareBundle   func(releasepkg.BundleOptions) (*releasepkg.Bundle, error)
-	publish         func(context.Context, *config.Config, string, string, []releasepkg.UploadAsset) error
-	resolveResolver func(*config.Config, string) releasepkg.Resolver
+	build            func(context.Context, string, *config.Config) ([]build.Artifact, error)
+	discoverBuild    func(string) ([]build.Artifact, error)
+	buildFrontend    func(context.Context, string, *config.Config, string) ([]frontend.BundleArtifact, error)
+	discoverFrontend func(string) ([]frontend.BundleArtifact, error)
+	generateDelta    func(context.Context, string, *config.Config, string) (*delta.Result, error)
+	discoverDelta    func(string) (*delta.Result, error)
+	prepareBundle    func(releasepkg.BundleOptions) (*releasepkg.Bundle, error)
+	publish          func(context.Context, *config.Config, string, string, []releasepkg.UploadAsset) error
+	resolveResolver  func(*config.Config, string) releasepkg.Resolver
 }
 
 func newReleaseCmd(opts *Options) *cobra.Command {
@@ -69,9 +73,14 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 			resolver := deps.resolveResolver(cfg, repository)
 
 			var artifacts []build.Artifact
+			var frontendBundles []frontend.BundleArtifact
 			var deltaResult *delta.Result
 			if opts.DryRun {
 				artifacts, err = deps.discoverBuild(projectOutputDir(projectDir, cfg))
+				if err != nil {
+					return err
+				}
+				frontendBundles, err = deps.discoverFrontend(projectOutputDir(projectDir, cfg))
 				if err != nil {
 					return err
 				}
@@ -86,6 +95,10 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 				if err != nil {
 					return err
 				}
+				frontendBundles, err = deps.buildFrontend(cmd.Context(), projectDir, cfg, versionText)
+				if err != nil {
+					return err
+				}
 				if cfg.Delta.Enabled {
 					deltaResult, err = deps.generateDelta(cmd.Context(), projectDir, cfg, repository)
 					if err != nil {
@@ -95,14 +108,15 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 			}
 
 			bundle, err := deps.prepareBundle(releasepkg.BundleOptions{
-				App:       cfg.App,
-				OutputDir: projectOutputDir(projectDir, cfg),
-				TempDir:   filepath.Join(projectDir, ".wailsrel", "release"),
-				Tag:       tag,
-				Version:   versionText,
-				Resolver:  resolver,
-				Artifacts: artifacts,
-				Delta:     deltaResult,
+				App:             cfg.App,
+				OutputDir:       projectOutputDir(projectDir, cfg),
+				TempDir:         filepath.Join(projectDir, ".wailsrel", "release"),
+				Tag:             tag,
+				Version:         versionText,
+				Resolver:        resolver,
+				Artifacts:       artifacts,
+				FrontendBundles: frontendBundles,
+				Delta:           deltaResult,
 			})
 			if err != nil {
 				return err
@@ -157,6 +171,20 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 			if err := persistFrontendCompat(projectDir, cfg, compatResult); err != nil {
 				return err
 			}
+			if info := ci.Detect(); info.IsGitHubActions && cfg.CI.Artifacts.Upload {
+				uploadDir := filepath.Join(projectDir, ".wailsrel", "upload")
+				uploadPaths := uploadSourcePaths(bundle.Uploads)
+				if err := artifactpkg.PrepareUploadDir(uploadPaths, "", uploadDir); err != nil {
+					return err
+				}
+				if err := artifactpkg.WriteGitHubOutput(artifactpkg.OutputResult{
+					Version:      versionText,
+					ManifestPath: filepath.Join(uploadDir, filepath.Base(bundle.ManifestPath)),
+					Artifacts:    uploadOutputPaths(uploadDir, bundle.Uploads),
+				}); err != nil {
+					return err
+				}
+			}
 
 			if opts.JSON {
 				return writeJSON(cmd.OutOrStdout(), view)
@@ -173,12 +201,14 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 
 func defaultReleaseDeps() releaseDeps {
 	return releaseDeps{
-		build:         executeReleaseBuild,
-		discoverBuild: discoverReleaseArtifacts,
-		generateDelta: executeReleaseDelta,
-		discoverDelta: discoverReleaseDelta,
-		prepareBundle: releasepkg.PrepareBundle,
-		publish:       publishReleaseAssets,
+		build:            executeReleaseBuild,
+		discoverBuild:    discoverReleaseArtifacts,
+		buildFrontend:    executeReleaseFrontendBundles,
+		discoverFrontend: discoverReleaseFrontendBundles,
+		generateDelta:    executeReleaseDelta,
+		discoverDelta:    discoverReleaseDelta,
+		prepareBundle:    releasepkg.PrepareBundle,
+		publish:          publishReleaseAssets,
 		resolveResolver: func(cfg *config.Config, repository string) releasepkg.Resolver {
 			if cfg.Release.Provider == releasepkg.ProviderHTTP {
 				return releasepkg.NewHTTPResolver(
@@ -251,6 +281,22 @@ func uploadNames(uploads []releasepkg.UploadAsset) []string {
 		names = append(names, upload.Name)
 	}
 	return names
+}
+
+func uploadSourcePaths(uploads []releasepkg.UploadAsset) []string {
+	paths := make([]string, 0, len(uploads))
+	for _, upload := range uploads {
+		paths = append(paths, upload.Path)
+	}
+	return paths
+}
+
+func uploadOutputPaths(uploadDir string, uploads []releasepkg.UploadAsset) []string {
+	paths := make([]string, 0, len(uploads))
+	for _, upload := range uploads {
+		paths = append(paths, filepath.Join(uploadDir, filepath.Base(upload.Path)))
+	}
+	return paths
 }
 
 func firstNonEmpty(values ...string) string {

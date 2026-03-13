@@ -9,9 +9,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/delta"
-	"github.com/you/wailsrel/pkg/release"
-	"github.com/you/wailsrel/pkg/version"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/release"
+	"github.com/Eriyc/wailsrel/pkg/version"
 )
 
 type UpdateInfo struct {

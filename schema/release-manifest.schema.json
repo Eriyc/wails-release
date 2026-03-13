@@ -68,6 +68,18 @@
         }
       },
       "additionalProperties": false
+    },
+    "patches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patch"
+      }
+    },
+    "frontend_bundles": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/frontend_bundle"
+      }
     }
   },
   "$defs": {
@@ -127,6 +139,87 @@
           "additionalProperties": {
             "type": "string"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "patch": {
+      "type": "object",
+      "required": [
+        "from_version",
+        "artifact",
+        "url",
+        "checksum",
+        "from_checksum",
+        "to_checksum",
+        "size"
+      ],
+      "properties": {
+        "from_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "from_checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "to_checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "frontend_bundle": {
+      "type": "object",
+      "required": [
+        "channel",
+        "version",
+        "compat_id",
+        "url",
+        "checksum",
+        "size"
+      ],
+      "properties": {
+        "channel": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "compat_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checksum": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "size": {
+          "type": "integer",
+          "minimum": 0
         }
       },
       "additionalProperties": false

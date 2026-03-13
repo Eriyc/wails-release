@@ -10,9 +10,9 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/delta"
-	"github.com/you/wailsrel/pkg/frontend"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
 
 type Applier interface {

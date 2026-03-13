@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/delta"
-	"github.com/you/wailsrel/pkg/frontend"
-	"github.com/you/wailsrel/pkg/release"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
+	"github.com/Eriyc/wailsrel/pkg/release"
 )
 
 func TestHTTPCheckerCheckReturnsNativeUpdateWithDelta(t *testing.T) {

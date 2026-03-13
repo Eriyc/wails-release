@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	reposchema "github.com/Eriyc/wailsrel/schema"
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	reposchema "github.com/you/wailsrel/schema"
 )
 
 const manifestSchemaName = "manifest.schema.json"

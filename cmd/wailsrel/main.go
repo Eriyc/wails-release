@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/you/wailsrel/internal/cli"
+	"github.com/Eriyc/wailsrel/internal/cli"
 )
 
 func main() {

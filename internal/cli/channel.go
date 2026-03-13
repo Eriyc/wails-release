@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"slices"
 
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/frontend"
 )
 
 func newChannelCmd(opts *Options) *cobra.Command {

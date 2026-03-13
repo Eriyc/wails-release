@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	internalexec "github.com/you/wailsrel/internal/exec"
-	"github.com/you/wailsrel/pkg/config"
+	internalexec "github.com/Eriyc/wailsrel/internal/exec"
+	"github.com/Eriyc/wailsrel/pkg/config"
 )
 
 func TestNewSignerDispatchesProviders(t *testing.T) {

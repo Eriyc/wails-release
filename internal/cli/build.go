@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/Eriyc/wailsrel/internal/ci"
+	artifactpkg "github.com/Eriyc/wailsrel/pkg/artifact"
+	"github.com/Eriyc/wailsrel/pkg/build"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/internal/ci"
-	artifactpkg "github.com/you/wailsrel/pkg/artifact"
-	"github.com/you/wailsrel/pkg/build"
 )
 
 type buildView struct {

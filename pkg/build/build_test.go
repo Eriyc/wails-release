@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/sign"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/sign"
 )
 
 func TestExpandMatrix(t *testing.T) {

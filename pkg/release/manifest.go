@@ -7,19 +7,21 @@ import (
 	"path/filepath"
 	"time"
 
+	reposchema "github.com/Eriyc/wailsrel/schema"
 	"github.com/santhosh-tekuri/jsonschema/v6"
-	reposchema "github.com/you/wailsrel/schema"
 )
 
 const releaseManifestSchemaName = "release-manifest.schema.json"
 
 type Manifest struct {
-	SchemaVersion int                `json:"schema_version"`
-	App           ManifestApp        `json:"app"`
-	Release       ManifestRelease    `json:"release"`
-	GeneratedAt   time.Time          `json:"generated_at"`
-	Artifacts     []ManifestArtifact `json:"artifacts"`
-	Delta         *ManifestDelta     `json:"delta,omitempty"`
+	SchemaVersion   int                      `json:"schema_version"`
+	App             ManifestApp              `json:"app"`
+	Release         ManifestRelease          `json:"release"`
+	GeneratedAt     time.Time                `json:"generated_at"`
+	Artifacts       []ManifestArtifact       `json:"artifacts"`
+	Delta           *ManifestDelta           `json:"delta,omitempty"`
+	Patches         []ManifestPatch          `json:"patches,omitempty"`
+	FrontendBundles []ManifestFrontendBundle `json:"frontend_bundles,omitempty"`
 }
 
 type ManifestApp struct {
@@ -48,6 +50,25 @@ type ManifestArtifact struct {
 
 type ManifestDelta struct {
 	ManifestURL string `json:"manifest_url"`
+}
+
+type ManifestPatch struct {
+	FromVersion  string `json:"from_version"`
+	Artifact     string `json:"artifact"`
+	URL          string `json:"url"`
+	Checksum     string `json:"checksum"`
+	FromChecksum string `json:"from_checksum"`
+	ToChecksum   string `json:"to_checksum"`
+	Size         int64  `json:"size"`
+}
+
+type ManifestFrontendBundle struct {
+	Channel  string `json:"channel"`
+	Version  string `json:"version"`
+	CompatID string `json:"compat_id"`
+	URL      string `json:"url"`
+	Checksum string `json:"checksum"`
+	Size     int64  `json:"size"`
 }
 
 func WriteManifest(manifest *Manifest, path string) error {

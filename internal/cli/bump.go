@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Eriyc/wailsrel/pkg/version"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/version"
 )
 
 func newBumpCmd(opts *Options) *cobra.Command {

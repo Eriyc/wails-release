@@ -9,10 +9,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/delta"
-	"github.com/you/wailsrel/pkg/release"
-	"github.com/you/wailsrel/pkg/version"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/release"
+	"github.com/Eriyc/wailsrel/pkg/version"
 )
 
 func projectOutputDir(projectDir string, cfg *config.Config) string {

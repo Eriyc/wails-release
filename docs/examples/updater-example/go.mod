@@ -1,4 +1,4 @@
-module github.com/you/wailsrel/docs/examples/updater-example
+module github.com/Eriyc/wailsrel/docs/examples/updater-example
 
 go 1.24
 

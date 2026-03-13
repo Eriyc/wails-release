@@ -8,9 +8,9 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Eriyc/wailsrel/pkg/config"
+	projecttemplates "github.com/Eriyc/wailsrel/templates"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/config"
-	projecttemplates "github.com/you/wailsrel/templates"
 )
 
 type initData struct {

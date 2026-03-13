@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	projecttemplates "github.com/you/wailsrel/templates"
+	projecttemplates "github.com/Eriyc/wailsrel/templates"
 )
 
 type nsisTemplateData struct {

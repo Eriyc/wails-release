@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/you/wailsrel/pkg/frontend"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
 
 func TestBuildDryRunWarnsOnCompatMismatch(t *testing.T) {

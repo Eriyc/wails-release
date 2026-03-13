@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/you/wailsrel/internal/gateway"
+	"github.com/Eriyc/wailsrel/internal/gateway"
 )
 
 func main() {

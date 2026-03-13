@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	releasepkg "github.com/you/wailsrel/pkg/release"
+	releasepkg "github.com/Eriyc/wailsrel/pkg/release"
 )
 
 type Server struct {

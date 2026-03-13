@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/Eriyc/wailsrel/pkg/delta"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/delta"
 )
 
 func newDeltaCmd(opts *Options) *cobra.Command {

@@ -1,6 +1,6 @@
 package build
 
-import "github.com/you/wailsrel/pkg/config"
+import "github.com/Eriyc/wailsrel/pkg/config"
 
 func ExpandMatrix(targets []config.TargetConfig) []Target {
 	matrix := make([]Target, 0, len(targets))

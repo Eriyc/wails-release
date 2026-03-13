@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	internalexec "github.com/you/wailsrel/internal/exec"
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/sign"
+	internalexec "github.com/Eriyc/wailsrel/internal/exec"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/sign"
 )
 
 type Target struct {

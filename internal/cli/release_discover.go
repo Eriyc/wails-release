@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/build"
-	"github.com/you/wailsrel/pkg/delta"
+	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/delta"
 )
 
 func discoverReleaseArtifacts(outputDir string) ([]build.Artifact, error) {

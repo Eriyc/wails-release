@@ -1,6 +1,6 @@
-module github.com/you/wailsrel
+module github.com/Eriyc/wailsrel
 
-go 1.23
+go 1.25
 
 require (
 	github.com/gabstv/go-bsdiff v1.0.5

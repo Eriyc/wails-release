@@ -7,8 +7,8 @@ import (
 	"slices"
 	"strconv"
 
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/frontend"
 )
 
 type bundleView struct {

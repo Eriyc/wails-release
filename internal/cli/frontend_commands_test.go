@@ -12,7 +12,7 @@ import (
 
 func TestBundleCommandBuildsChannelBundleWithManifest(t *testing.T) {
 	repo := t.TempDir()
-	configPath := writeFrontendPhase5Config(t, repo)
+	configPath := writeFrontendConfig(t, repo)
 
 	tests := []struct {
 		name    string
@@ -51,7 +51,7 @@ func TestBundleCommandBuildsChannelBundleWithManifest(t *testing.T) {
 
 func TestBundleCommandRejectsUnknownChannel(t *testing.T) {
 	repo := t.TempDir()
-	configPath := writeFrontendPhase5Config(t, repo)
+	configPath := writeFrontendConfig(t, repo)
 
 	cmd := NewRootCommand()
 	var stdout bytes.Buffer
@@ -70,7 +70,7 @@ func TestBundleCommandRejectsUnknownChannel(t *testing.T) {
 
 func TestChannelCommandSwitchesActiveChannelMarker(t *testing.T) {
 	repo := t.TempDir()
-	configPath := writeFrontendPhase5Config(t, repo)
+	configPath := writeFrontendConfig(t, repo)
 
 	tests := []struct {
 		name    string
@@ -106,7 +106,7 @@ func TestChannelCommandSwitchesActiveChannelMarker(t *testing.T) {
 
 func TestChannelCommandRejectsUnknownChannel(t *testing.T) {
 	repo := t.TempDir()
-	configPath := writeFrontendPhase5Config(t, repo)
+	configPath := writeFrontendConfig(t, repo)
 
 	cmd := NewRootCommand()
 	var stdout bytes.Buffer
@@ -123,7 +123,7 @@ func TestChannelCommandRejectsUnknownChannel(t *testing.T) {
 	}
 }
 
-func writeFrontendPhase5Config(t *testing.T, repo string) string {
+func writeFrontendConfig(t *testing.T, repo string) string {
 	t.Helper()
 
 	configPath := filepath.Join(repo, "wailsrel.yaml")

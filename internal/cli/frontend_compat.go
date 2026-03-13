@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/frontend"
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
 
 type frontendCompatResult struct {

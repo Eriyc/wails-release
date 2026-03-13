@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/you/wailsrel/pkg/sign"
+	"github.com/Eriyc/wailsrel/pkg/sign"
 )
 
 func (b *WailsBuilder) signArtifact(ctx context.Context, target Target, path string, notarize bool) error {

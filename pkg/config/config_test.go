@@ -3,8 +3,11 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestLoadAppliesEnvExpansionAndDefaults(t *testing.T) {
@@ -233,5 +236,123 @@ func TestValidateRequiresURLManifestSource(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected delta.old_artifacts.manifest_url validation error, got %+v", errs)
+	}
+}
+
+func TestConfigMarshalUnmarshalRoundTrip(t *testing.T) {
+	original := Config{
+		App: AppConfig{
+			Name:        "MyApp",
+			Identifier:  "com.example.myapp",
+			Description: "Updater fixture",
+			Author:      "Example",
+			URL:         "https://example.com",
+		},
+		Version: VersionConfig{
+			Source:           "git",
+			File:             "VERSION",
+			TagPrefix:        "v",
+			PrereleaseFormat: "beta.{n}",
+		},
+		Targets: []TargetConfig{
+			{
+				OS:            "darwin",
+				Arch:          []string{"arm64", "amd64"},
+				OutputFormats: []string{"app", "dmg"},
+				Sign: SignConfig{
+					Provider: "apple",
+					Identity: "Developer ID Application: Example (TEAMID)",
+					Notarize: true,
+					AppleID:  "dev@example.com",
+					Password: "app-password",
+					TeamID:   "TEAMID",
+				},
+			},
+		},
+		Installers: InstallerConfig{
+			NSIS: NSISInstallerConfig{
+				License:      "LICENSE.txt",
+				Icon:         "icon.ico",
+				CustomScript: "installer.nsi",
+			},
+			DMG: DMGInstallerConfig{
+				Background: "background.png",
+				IconSize:   96,
+				WindowSize: []int{960, 540},
+			},
+			Deb: DebInstallerConfig{
+				Depends:  []string{"libwebkit2gtk-4.1-0"},
+				Section:  "utils",
+				Priority: "optional",
+			},
+		},
+		Delta: DeltaConfig{
+			Enabled:      true,
+			Algorithm:    "bsdiff",
+			FromVersions: 5,
+			OldArtifacts: OldArtifactsConfig{
+				Source:       "url",
+				Repository:   "acme/myapp",
+				CacheDir:     ".wailsrel/cache",
+				ManifestURL:  "https://releases.example.com/manifest.json",
+				AuthTokenEnv: "WAILSREL_TOKEN",
+			},
+		},
+		Frontend: FrontendConfig{
+			Enabled:         true,
+			CompatVersion:   3,
+			CompatAutoCheck: true,
+			BindingsDir:     "frontend/bindings",
+			BuildDir:        "frontend/dist",
+			Channels:        []string{"stable", "beta"},
+			BuildCommand:    "npm run build",
+		},
+		Update: UpdateConfig{
+			ManifestURL:    "https://releases.example.com/manifest.json",
+			CheckInterval:  "1h",
+			Channels:       []string{"stable", "beta"},
+			AllowDowngrade: true,
+			MandatoryMin:   "1.5.0",
+		},
+		Release: ReleaseConfig{
+			Provider: "http",
+			GitHub: ReleaseGitHubConfig{
+				Repository: "acme/myapp",
+				APIBaseURL: "https://api.github.example.com",
+			},
+			HTTP: ReleaseHTTPConfig{
+				BaseURL:            "https://releases.example.com",
+				ManifestPath:       "/manifest.json",
+				DeltaManifestPath:  "/delta/manifest.json",
+				DownloadPathPrefix: "/download",
+			},
+		},
+		Output: OutputConfig{
+			Dir:          "dist",
+			ManifestFile: "manifest.json",
+			Clean:        true,
+		},
+		CI: CIConfig{
+			Provider: "github",
+			Timeout:  "45m",
+			Artifacts: CIArtifactsConfig{
+				Upload:        true,
+				RetentionDays: 30,
+			},
+		},
+	}
+
+	data, err := yaml.Marshal(&original)
+	if err != nil {
+		t.Fatalf("marshal config: %v", err)
+	}
+
+	var decoded Config
+	if err := yaml.Unmarshal(data, &decoded); err != nil {
+		t.Fatalf("unmarshal config: %v", err)
+	}
+
+	if !reflect.DeepEqual(decoded, original) {
+		t.Fatalf("expected config round-trip to preserve values:\noriginal=%#v\ndecoded=%#v", original, decoded)
 	}
 }

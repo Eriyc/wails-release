@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/you/wailsrel/pkg/version"
+	"github.com/Eriyc/wailsrel/pkg/version"
 )
 
 const manifestFileName = "manifest.json"

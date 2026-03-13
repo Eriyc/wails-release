@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/you/wailsrel/pkg/version"
+	"github.com/Eriyc/wailsrel/pkg/version"
 )
 
 type githubRelease struct {

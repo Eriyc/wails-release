@@ -64,10 +64,10 @@ func TestPhase7ManifestContractSurface(t *testing.T) {
 
 func TestGenerateExpandsURLTemplatesForArtifactsPatchesAndFrontendBundles(t *testing.T) {
 	manifest, err := Generate(GenerateOpts{
-		AppName:      "MyApp",
-		Version:      "1.2.3",
-		Channel:      "stable",
-		NativeCompat: "2",
+		AppName:             "MyApp",
+		Version:             "1.2.3",
+		Channel:             "stable",
+		NativeCompat:        "2",
 		ArtifactURLTemplate: "https://releases.example.com/download/{version}/{os}/{arch}/{name}",
 		PatchURLTemplate:    "https://releases.example.com/download/{version}/{os}/{arch}/{name}",
 		FrontendURLTemplate: "https://releases.example.com/download/{version}/{channel}/{name}",
@@ -95,12 +95,12 @@ func TestGenerateExpandsURLTemplatesForArtifactsPatchesAndFrontendBundles(t *tes
 		},
 		FrontendBundles: []GeneratedFrontendBundle{
 			{
-				Name:      "frontend-beta-1.2.3.zip",
-				Channel:   "beta",
-				Version:   "1.2.3",
-				CompatID:  "2",
-				Checksum:  "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
-				Size:      67,
+				Name:     "frontend-beta-1.2.3.zip",
+				Channel:  "beta",
+				Version:  "1.2.3",
+				CompatID: "2",
+				Checksum: "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+				Size:     67,
 			},
 		},
 	})

@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Eriyc/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/sign"
 	"github.com/spf13/cobra"
-	"github.com/you/wailsrel/pkg/config"
-	"github.com/you/wailsrel/pkg/sign"
 )
 
 type signView struct {

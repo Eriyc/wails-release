@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/you/wailsrel/pkg/config"
+	"github.com/Eriyc/wailsrel/pkg/config"
 )
 
 func TestSignCommandSkipsWhenProviderIsNone(t *testing.T) {
