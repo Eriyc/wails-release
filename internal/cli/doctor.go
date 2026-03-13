@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"slices"
 
 	"github.com/spf13/cobra"
+	"github.com/you/wailsrel/pkg/build"
 )
 
 type doctorCheck struct {
@@ -24,29 +24,25 @@ func newDoctorCmd(opts *Options) *cobra.Command {
 		Use:   "doctor",
 		Short: "Check local dependencies for configured targets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			var targets []string
+			toolNames := []string{"go", "git"}
 
 			cfg, _, err := loadConfig(opts)
 			if err == nil {
-				for _, target := range cfg.Targets {
-					targets = append(targets, target.OS)
+				for _, target := range build.ExpandMatrix(cfg.Targets) {
+					for _, tool := range build.RequiredTools(target) {
+						toolNames = append(toolNames, tool)
+					}
 				}
 			}
 
-			checks := []doctorCheck{
-				lookup("go"),
-				lookup("git"),
-				lookup("wails3"),
-			}
-
-			if slices.Contains(targets, "darwin") {
-				checks = append(checks, lookup("codesign"), lookup("hdiutil"))
-			}
-			if slices.Contains(targets, "windows") {
-				checks = append(checks, lookup("makensis"), lookup("signtool"))
-			}
-			if slices.Contains(targets, "linux") {
-				checks = append(checks, lookup("appimagetool"), lookup("dpkg-deb"), lookup("rpmbuild"))
+			checks := make([]doctorCheck, 0, len(toolNames))
+			seen := make(map[string]struct{}, len(toolNames))
+			for _, name := range toolNames {
+				if _, ok := seen[name]; ok {
+					continue
+				}
+				seen[name] = struct{}{}
+				checks = append(checks, lookup(name))
 			}
 
 			view := doctorView{Checks: checks}

@@ -1,13 +1,120 @@
 package cli
 
-import "github.com/spf13/cobra"
+import (
+	"context"
+	"fmt"
+	"path/filepath"
+	"time"
+
+	"github.com/spf13/cobra"
+	"github.com/you/wailsrel/internal/ci"
+	artifactpkg "github.com/you/wailsrel/pkg/artifact"
+	"github.com/you/wailsrel/pkg/build"
+)
+
+type buildView struct {
+	OutputDir string           `json:"output_dir"`
+	Targets   []build.Target   `json:"targets"`
+	Artifacts []build.Artifact `json:"artifacts"`
+	Duration  string           `json:"duration"`
+}
 
 func newBuildCmd(opts *Options) *cobra.Command {
 	return &cobra.Command{
 		Use:   "build",
 		Short: "Build configured release targets",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return printPlaceholder("build")
+			cfg, configPath, err := loadConfig(opts)
+			if err != nil {
+				return err
+			}
+
+			projectDir := filepath.Dir(configPath)
+			outputDir := cfg.Output.Dir
+			if !filepath.IsAbs(outputDir) {
+				outputDir = filepath.Join(projectDir, outputDir)
+			}
+
+			matrix := build.ExpandMatrix(cfg.Targets)
+			view := buildView{
+				OutputDir: outputDir,
+				Targets:   matrix,
+			}
+
+			if opts.DryRun {
+				if opts.JSON {
+					return writeJSON(cmd.OutOrStdout(), view)
+				}
+
+				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Output dir: %s\nTargets:\n", outputDir)
+				if err != nil {
+					return err
+				}
+				for _, target := range matrix {
+					if _, err := fmt.Fprintf(cmd.OutOrStdout(), "- %s/%s -> %v\n", target.OS, target.Arch, target.OutputFormats); err != nil {
+						return err
+					}
+				}
+				return nil
+			}
+
+			if err := artifactpkg.PrepareOutputDir(outputDir, cfg.Output.Clean); err != nil {
+				return err
+			}
+
+			timeout, err := time.ParseDuration(cfg.CI.Timeout)
+			if err != nil {
+				return err
+			}
+
+			builder := build.NewBuilder(build.Options{
+				ProjectDir: projectDir,
+				OutputDir:  outputDir,
+				AppName:    cfg.App.Name,
+				Installers: cfg.Installers,
+				Timeout:    timeout,
+			})
+
+			ctx := context.Background()
+			start := time.Now()
+			for _, target := range matrix {
+				if err := builder.Available(ctx, target); err != nil {
+					return err
+				}
+
+				result, err := builder.Build(ctx, target)
+				if err != nil {
+					return fmt.Errorf("build %s/%s: %w", target.OS, target.Arch, err)
+				}
+
+				view.Artifacts = append(view.Artifacts, result.Artifacts...)
+			}
+			view.Duration = time.Since(start).String()
+
+			if info := ci.Detect(); info.IsGitHubActions && cfg.CI.Artifacts.Upload {
+				paths := make([]string, 0, len(view.Artifacts))
+				for _, artifact := range view.Artifacts {
+					paths = append(paths, filepath.Join(outputDir, filepath.FromSlash(artifact.Path)))
+				}
+				if err := artifactpkg.WriteGitHubOutput(artifactpkg.OutputResult{Artifacts: paths}); err != nil {
+					return err
+				}
+			}
+
+			if opts.JSON {
+				return writeJSON(cmd.OutOrStdout(), view)
+			}
+
+			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Built %d artifact(s) in %s\n", len(view.Artifacts), view.Duration)
+			if err != nil {
+				return err
+			}
+			for _, artifact := range view.Artifacts {
+				if _, err := fmt.Fprintf(cmd.OutOrStdout(), "%s %s\n", artifact.Format, filepath.Join(outputDir, filepath.FromSlash(artifact.Path))); err != nil {
+					return err
+				}
+			}
+			return nil
 		},
 	}
 }

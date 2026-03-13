@@ -1,0 +1,41 @@
+!include "MUI2.nsh"
+
+Unicode True
+Name "{{ .AppName }}"
+OutFile "{{ .OutputPath }}"
+InstallDir "$PROGRAMFILES64\{{ .AppName }}"
+RequestExecutionLevel admin
+
+{{- if .IconPath }}
+Icon "{{ .IconPath }}"
+{{- end }}
+{{- if .LicensePath }}
+LicenseData "{{ .LicensePath }}"
+{{- end }}
+
+!insertmacro MUI_PAGE_WELCOME
+{{- if .LicensePath }}
+!insertmacro MUI_PAGE_LICENSE "{{ .LicensePath }}"
+{{- end }}
+!insertmacro MUI_PAGE_DIRECTORY
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+
+!insertmacro MUI_LANGUAGE "English"
+
+Section "Install"
+  SetOutPath "$INSTDIR"
+  File "{{ .SourcePath }}"
+  CreateShortcut "$DESKTOP\{{ .AppName }}.lnk" "$INSTDIR\{{ .BinaryName }}"
+  WriteUninstaller "$INSTDIR\uninstall.exe"
+SectionEnd
+
+Section "Uninstall"
+  Delete "$DESKTOP\{{ .AppName }}.lnk"
+  Delete "$INSTDIR\{{ .BinaryName }}"
+  Delete "$INSTDIR\uninstall.exe"
+  RMDir "$INSTDIR"
+SectionEnd
+
+{{ .CustomScript }}
