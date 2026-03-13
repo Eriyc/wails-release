@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/spf13/cobra"
+	"github.com/you/wailsrel/pkg/config"
 	projecttemplates "github.com/you/wailsrel/templates"
 )
 

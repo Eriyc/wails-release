@@ -163,8 +163,6 @@ func Load(dir string) (*Config, error) {
 		return nil, fmt.Errorf("parse %s: %w", path, err)
 	}
 
-	cfg.applyDefaults()
-
 	if errs := cfg.Validate(); hasFatal(errs) {
 		return nil, errors.Join(validationErrors(errs)...)
 	}

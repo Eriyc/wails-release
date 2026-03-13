@@ -9,7 +9,12 @@ import (
 )
 
 func TestRunCapturesOutput(t *testing.T) {
-	result, err := Run(context.Background(), os.Args[0], helperArgs("echo"), Options{})
+	result, err := Run(context.Background(), os.Args[0], helperArgs(), Options{
+		Env: []string{
+			"GO_WANT_HELPER_PROCESS=1",
+			"HELPER_MODE=echo",
+		},
+	})
 	if err != nil {
 		t.Fatalf("run helper: %v", err)
 	}
@@ -26,29 +31,35 @@ func TestRunCapturesOutput(t *testing.T) {
 }
 
 func TestRunTimeout(t *testing.T) {
-	_, err := Run(context.Background(), os.Args[0], helperArgs("sleep"), Options{Timeout: 100 * time.Millisecond})
+	_, err := Run(context.Background(), os.Args[0], helperArgs(), Options{
+		Env: []string{
+			"GO_WANT_HELPER_PROCESS=1",
+			"HELPER_MODE=sleep",
+		},
+		Timeout: 100 * time.Millisecond,
+	})
 	if err == nil {
 		t.Fatal("expected timeout error")
 	}
 }
 
-func helperArgs(mode string) []string {
-	return []string{"-test.run=TestHelperProcess", "--", mode}
+func helperArgs() []string {
+	return []string{"-test.run=TestHelperProcess"}
 }
 
 func TestHelperProcess(t *testing.T) {
-	if len(os.Args) < 3 || os.Args[1] != "--" {
+	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
 		return
 	}
 
-	switch os.Args[2] {
+	switch os.Getenv("HELPER_MODE") {
 	case "echo":
 		fmt.Fprint(os.Stdout, "stdout line\n")
 		fmt.Fprint(os.Stderr, "stderr line\n")
 	case "sleep":
 		time.Sleep(2 * time.Second)
 	default:
-		t.Fatalf("unknown helper mode %q", os.Args[2])
+		t.Fatalf("unknown helper mode %q", os.Getenv("HELPER_MODE"))
 	}
 
 	os.Exit(0)
