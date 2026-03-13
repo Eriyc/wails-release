@@ -1,0 +1,235 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.BundleEntry.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "asset_key": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "commit_sha": {
+          "type": "string"
+        },
+        "compat_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "published_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "source_branch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag",
+        "kind",
+        "name",
+        "version",
+        "compat_id",
+        "asset_key",
+        "checksum",
+        "size",
+        "force",
+        "channel",
+        "source_branch",
+        "commit_sha",
+        "display_name",
+        "description",
+        "url"
+      ],
+      "title": "Bundle Entry",
+      "type": "object"
+    },
+    "wailsrel.v1.ManifestApp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "identifier": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "identifier"
+      ],
+      "title": "Manifest App",
+      "type": "object"
+    },
+    "wailsrel.v1.ManifestArtifact.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "arch": {
+          "type": "string"
+        },
+        "asset_name": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "format": {
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "os": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "transport": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "asset_name",
+        "os",
+        "arch",
+        "format",
+        "transport",
+        "checksum",
+        "size",
+        "url"
+      ],
+      "title": "Manifest Artifact",
+      "type": "object"
+    },
+    "wailsrel.v1.ManifestDelta.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "manifest_url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifest_url"
+      ],
+      "title": "Manifest Delta",
+      "type": "object"
+    },
+    "wailsrel.v1.ManifestRelease.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag",
+        "version",
+        "provider"
+      ],
+      "title": "Manifest Release",
+      "type": "object"
+    },
+    "wailsrel.v1.PublicReleaseManifest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "app": {
+          "$ref": "#/$defs/wailsrel.v1.ManifestApp.schema.strict.json"
+        },
+        "artifacts": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.ManifestArtifact.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "delta": {
+          "$ref": "#/$defs/wailsrel.v1.ManifestDelta.schema.strict.json"
+        },
+        "frontend_bundles": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.BundleEntry.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "release": {
+          "$ref": "#/$defs/wailsrel.v1.ManifestRelease.schema.strict.json"
+        },
+        "schema_version": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version"
+      ],
+      "title": "Public Release Manifest",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.PublicReleaseManifest.schema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.PublicReleaseManifest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

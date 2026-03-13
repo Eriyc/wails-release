@@ -1,0 +1,23 @@
+{
+  "$id": "wailsrel.v1.ManifestRelease.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "provider": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tag",
+    "version",
+    "provider"
+  ],
+  "title": "Manifest Release",
+  "type": "object"
+}

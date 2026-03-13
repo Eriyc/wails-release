@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package wailsrel.v1;
+
+option go_package = "github.com/Eriyc/wailsrel/gen/go/wailsrel/v1;wailsrelv1";
+
+import "google/protobuf/timestamp.proto";
+
+message PublicDeltaManifest {
+  int32 schema_version = 1;
+  string algorithm = 2;
+  google.protobuf.Timestamp generated_at = 3;
+  repeated PublicDeltaManifestEntry patches = 4;
+}
+
+message PublicDeltaManifestEntry {
+  string from_version = 1;
+  string artifact = 2;
+  string patch = 3;
+  string asset_key = 4;
+  string artifact_kind = 5;
+  string from_sha256 = 6;
+  string to_sha256 = 7;
+  string patch_sha256 = 8;
+  int64 from_size = 9;
+  int64 to_size = 10;
+  int64 patch_size = 11;
+  int64 savings_bytes = 12;
+  double savings_percent = 13;
+}

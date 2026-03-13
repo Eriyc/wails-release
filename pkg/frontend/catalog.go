@@ -33,6 +33,7 @@ type Catalog struct {
 	Codepush      []CodepushEntry   `json:"codepush,omitempty"`
 	Experiments   []ExperimentEntry `json:"experiments,omitempty"`
 	Signature     string            `json:"signature"`
+	SignedAt      time.Time         `json:"signed_at,omitempty"`
 }
 
 type CodepushEntry struct {
@@ -59,14 +60,7 @@ type ExperimentEntry struct {
 }
 
 func DecodeCatalog(data []byte, publicKey, expectedAppID string) (*Catalog, error) {
-	var catalog Catalog
-	if err := json.Unmarshal(data, &catalog); err != nil {
-		return nil, err
-	}
-	if err := catalog.Verify(publicKey, expectedAppID); err != nil {
-		return nil, err
-	}
-	return &catalog, nil
+	return DecodeCatalogResponse(data, "application/json", publicKey, expectedAppID)
 }
 
 func (c Catalog) Verify(publicKey, expectedAppID string) error {
@@ -93,7 +87,10 @@ func (c Catalog) Verify(publicKey, expectedAppID string) error {
 		return err
 	}
 	if !ed25519.Verify(key, payload, signature) {
-		return fmt.Errorf("frontend catalog signature verification failed")
+		legacyPayload, legacyErr := c.legacySignedPayload()
+		if legacyErr != nil || !ed25519.Verify(key, legacyPayload, signature) {
+			return fmt.Errorf("frontend catalog signature verification failed")
+		}
 	}
 	return nil
 }
@@ -219,6 +216,12 @@ func validateCatalogBundle(kind, name, bundleVersion, compatID, rawURL, checksum
 }
 
 func (c Catalog) signedPayload() ([]byte, error) {
+	copy := c
+	copy.Signature = ""
+	return copy.canonicalSignedPayload()
+}
+
+func (c Catalog) legacySignedPayload() ([]byte, error) {
 	copy := c
 	copy.Signature = ""
 	return json.Marshal(copy)

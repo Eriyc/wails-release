@@ -2,13 +2,14 @@ package update
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"runtime"
 	"strings"
 
+	"github.com/Eriyc/wailsrel/pkg/contract"
 	"github.com/Eriyc/wailsrel/pkg/delta"
 	"github.com/Eriyc/wailsrel/pkg/release"
 	"github.com/Eriyc/wailsrel/pkg/version"
@@ -151,6 +152,7 @@ func (c *HTTPChecker) fetchReleaseManifest(ctx context.Context, manifestURL stri
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", contract.PreferredAcceptHeader())
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -159,12 +161,11 @@ func (c *HTTPChecker) fetchReleaseManifest(ctx context.Context, manifestURL stri
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("fetch release manifest: unexpected status %s", resp.Status)
 	}
-
-	var manifest release.Manifest
-	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
-	return &manifest, nil
+	return release.DecodeManifest(data, resp.Header.Get("Content-Type"))
 }
 
 func (c *HTTPChecker) fetchDeltaManifest(ctx context.Context, manifestURL string) (*delta.PatchManifest, error) {
@@ -172,6 +173,7 @@ func (c *HTTPChecker) fetchDeltaManifest(ctx context.Context, manifestURL string
 	if err != nil {
 		return nil, err
 	}
+	req.Header.Set("Accept", contract.PreferredAcceptHeader())
 	resp, err := c.client.Do(req)
 	if err != nil {
 		return nil, err
@@ -180,12 +182,11 @@ func (c *HTTPChecker) fetchDeltaManifest(ctx context.Context, manifestURL string
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("fetch delta manifest: unexpected status %s", resp.Status)
 	}
-
-	var manifest delta.PatchManifest
-	if err := json.NewDecoder(resp.Body).Decode(&manifest); err != nil {
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
-	return &manifest, nil
+	return delta.DecodeManifest(data, resp.Header.Get("Content-Type"))
 }
 
 func findArtifact(artifacts []release.ManifestArtifact, osName, arch, channel, nativeCompat string) (release.ManifestArtifact, bool) {

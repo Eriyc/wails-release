@@ -8,6 +8,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,6 +19,12 @@ import (
 
 	"github.com/Eriyc/wailsrel/pkg/frontend"
 )
+
+type frontendRoundTripFunc func(*http.Request) (*http.Response, error)
+
+func (fn frontendRoundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
+	return fn(req)
+}
 
 func TestRefreshFrontendCatalogForcedCodepushRetriesOnlyOnce(t *testing.T) {
 	root := t.TempDir()
@@ -65,12 +72,12 @@ func TestRefreshFrontendCatalogForcedCodepushRetriesOnlyOnce(t *testing.T) {
 	defer server.Close()
 
 	service := NewService(Options{
-		CurrentVersion:            "1.0.0",
-		TargetPath:                writeTempFile(t, "binary-data"),
-		Client:                    server.Client(),
-		FrontendManager:           manager,
-		FrontendCatalogURL:        server.URL + "/frontend/catalog.json",
-		FrontendCatalogPublicKey:  base64.StdEncoding.EncodeToString(publicKey),
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
 	})
 
 	state := service.RefreshFrontendCatalog()
@@ -88,6 +95,66 @@ func TestRefreshFrontendCatalogForcedCodepushRetriesOnlyOnce(t *testing.T) {
 	service.RefreshFrontendCatalog()
 	if bundleDownloads != 1 {
 		t.Fatalf("expected one forced codepush download attempt, got %d", bundleDownloads)
+	}
+}
+
+func TestRefreshFrontendCatalogForcedCodepushMarkerReadFailureMarksStateStale(t *testing.T) {
+	root := t.TempDir()
+	manager := &frontend.BundleManager{
+		AppID:        "com.example.app",
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(root, ".wailsrel"),
+	}
+	if err := os.MkdirAll(manager.OverrideRoot, 0o755); err != nil {
+		t.Fatalf("mkdir override root: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(manager.OverrideRoot, "forced-failures.json"), []byte("{\n"), 0o644); err != nil {
+		t.Fatalf("write malformed forced failure state: %v", err)
+	}
+
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+
+	var server *httptest.Server
+	server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		catalog := frontend.Catalog{
+			SchemaVersion: frontend.CatalogSchemaVersion,
+			AppID:         "com.example.app",
+			GeneratedAt:   time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC),
+			Codepush: []frontend.CodepushEntry{
+				{
+					Name:        "hotfix-1",
+					Version:     "1.0.1",
+					CompatID:    "2",
+					URL:         server.URL + "/download/codepush.zip",
+					Checksum:    "sha256:" + strings.Repeat("a", 64),
+					Size:        99,
+					Force:       true,
+					PublishedAt: time.Date(2026, 3, 13, 12, 30, 0, 0, time.UTC),
+				},
+			},
+		}
+		writeSignedCatalog(t, w, catalog, privateKey)
+	}))
+	defer server.Close()
+
+	service := NewService(Options{
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
+	})
+
+	state := service.RefreshFrontendCatalog()
+	if !state.Stale {
+		t.Fatalf("expected stale state after forced failure marker read error, got %+v", state)
+	}
+	if !strings.Contains(state.LastError, "JSON") && !strings.Contains(state.LastError, "json") {
+		t.Fatalf("expected malformed forced failure state error, got %+v", state)
 	}
 }
 
@@ -127,12 +194,12 @@ func TestRefreshFrontendCatalogFailurePreservesSelection(t *testing.T) {
 	defer server.Close()
 
 	service := NewService(Options{
-		CurrentVersion:            "1.0.0",
-		TargetPath:                writeTempFile(t, "binary-data"),
-		Client:                    server.Client(),
-		FrontendManager:           manager,
-		FrontendCatalogURL:        server.URL + "/frontend/catalog.json",
-		FrontendCatalogPublicKey:  base64.StdEncoding.EncodeToString(make([]byte, ed25519.PublicKeySize)),
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(make([]byte, ed25519.PublicKeySize)),
 	})
 
 	state := service.RefreshFrontendCatalog()
@@ -142,6 +209,127 @@ func TestRefreshFrontendCatalogFailurePreservesSelection(t *testing.T) {
 	if state.ActiveMode != frontend.BundleKindExperiment {
 		t.Fatalf("expected experiment to remain active, got %+v", state)
 	}
+}
+
+func TestRefreshFrontendCatalogRejectsRedirectedOrigin(t *testing.T) {
+	manager := &frontend.BundleManager{
+		AppID:        "com.example.app",
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(t.TempDir(), ".wailsrel"),
+	}
+
+	client := &http.Client{
+		Transport: frontendRoundTripFunc(func(req *http.Request) (*http.Response, error) {
+			redirected := req.Clone(req.Context())
+			redirected.URL.Scheme = "https"
+			redirected.URL.Host = "mirror.example.com"
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Status:     "200 OK",
+				Body:       io.NopCloser(strings.NewReader(`{}`)),
+				Header:     make(http.Header),
+				Request:    redirected,
+			}, nil
+		}),
+	}
+
+	service := NewService(Options{
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   client,
+		FrontendManager:          manager,
+		FrontendCatalogURL:       "https://updates.example.com/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(make([]byte, ed25519.PublicKeySize)),
+	})
+
+	state := service.RefreshFrontendCatalog()
+	if !state.Stale {
+		t.Fatalf("expected stale state after redirected catalog fetch, got %+v", state)
+	}
+	if !strings.Contains(state.LastError, "redirected away from pinned origin") {
+		t.Fatalf("expected redirected origin error, got %+v", state)
+	}
+}
+
+func TestApplyCodepushWithoutCompatibleCodepushReturnsNoop(t *testing.T) {
+	root := t.TempDir()
+	manager := &frontend.BundleManager{
+		AppID:        "com.example.app",
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(root, ".wailsrel"),
+	}
+
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+
+	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		catalog := frontend.Catalog{
+			SchemaVersion: frontend.CatalogSchemaVersion,
+			AppID:         "com.example.app",
+			GeneratedAt:   time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC),
+		}
+		writeSignedCatalog(t, w, catalog, privateKey)
+	}))
+	defer server.Close()
+
+	service := NewService(Options{
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
+	})
+
+	result := service.ApplyCodepush()
+	if result.Applied || result.Error != "" {
+		t.Fatalf("expected no-op codepush result, got %+v", result)
+	}
+	if result.Message != "There is no compatible codepush available." {
+		t.Fatalf("unexpected no-op message: %+v", result)
+	}
+}
+
+func TestApplyCodepushFailureMarksStateStale(t *testing.T) {
+	t.Run("download status", func(t *testing.T) {
+		service, _ := newCodepushApplyTestService(t, "sha256:"+strings.Repeat("a", 64), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, "bad gateway", http.StatusBadGateway)
+		}))
+
+		result := service.ApplyCodepush()
+		if result.Applied {
+			t.Fatalf("expected apply failure, got %+v", result)
+		}
+		if result.Message != "Codepush apply failed." || !strings.Contains(result.Error, "unexpected status 502 Bad Gateway") {
+			t.Fatalf("unexpected download failure result: %+v", result)
+		}
+
+		state := service.GetFrontendState()
+		if !state.Stale || !strings.Contains(state.LastError, "unexpected status 502 Bad Gateway") {
+			t.Fatalf("expected stale state after download failure, got %+v", state)
+		}
+	})
+
+	t.Run("checksum mismatch", func(t *testing.T) {
+		service, _ := newCodepushApplyTestService(t, "sha256:"+strings.Repeat("f", 64), http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			_, _ = w.Write([]byte("not-a-real-bundle"))
+		}))
+
+		result := service.ApplyCodepush()
+		if result.Applied {
+			t.Fatalf("expected apply failure, got %+v", result)
+		}
+		if result.Message != "Codepush apply failed." || !strings.Contains(result.Error, "checksum mismatch") {
+			t.Fatalf("unexpected checksum failure result: %+v", result)
+		}
+
+		state := service.GetFrontendState()
+		if !state.Stale || !strings.Contains(state.LastError, "checksum mismatch") {
+			t.Fatalf("expected stale state after checksum mismatch, got %+v", state)
+		}
+	})
 }
 
 func TestSwitchExperimentInstallsAndSelectsBundle(t *testing.T) {
@@ -206,12 +394,12 @@ func TestSwitchExperimentInstallsAndSelectsBundle(t *testing.T) {
 	defer server.Close()
 
 	service := NewService(Options{
-		CurrentVersion:            "1.0.0",
-		TargetPath:                writeTempFile(t, "binary-data"),
-		Client:                    server.Client(),
-		FrontendManager:           manager,
-		FrontendCatalogURL:        server.URL + "/frontend/catalog.json",
-		FrontendCatalogPublicKey:  base64.StdEncoding.EncodeToString(publicKey),
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
 	})
 
 	service.RefreshFrontendCatalog()
@@ -273,12 +461,12 @@ func TestRefreshFrontendCatalogClearsRemovedSelection(t *testing.T) {
 	defer server.Close()
 
 	service := NewService(Options{
-		CurrentVersion:            "1.0.0",
-		TargetPath:                writeTempFile(t, "binary-data"),
-		Client:                    server.Client(),
-		FrontendManager:           manager,
-		FrontendCatalogURL:        server.URL + "/frontend/catalog.json",
-		FrontendCatalogPublicKey:  base64.StdEncoding.EncodeToString(publicKey),
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
 	})
 
 	state := service.RefreshFrontendCatalog()
@@ -347,6 +535,61 @@ func writeSignedCatalog(t *testing.T, w http.ResponseWriter, catalog frontend.Ca
 	if err := json.NewEncoder(w).Encode(catalog); err != nil {
 		t.Fatalf("encode catalog: %v", err)
 	}
+}
+
+func newCodepushApplyTestService(t *testing.T, checksum string, bundleHandler http.Handler) (*Service, *frontend.BundleManager) {
+	t.Helper()
+
+	root := t.TempDir()
+	manager := &frontend.BundleManager{
+		AppID:        "com.example.app",
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(root, ".wailsrel"),
+	}
+
+	publicKey, privateKey, err := ed25519.GenerateKey(rand.Reader)
+	if err != nil {
+		t.Fatalf("generate key: %v", err)
+	}
+
+	var server *httptest.Server
+	server = httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/frontend/catalog.json":
+			catalog := frontend.Catalog{
+				SchemaVersion: frontend.CatalogSchemaVersion,
+				AppID:         "com.example.app",
+				GeneratedAt:   time.Date(2026, 3, 13, 12, 0, 0, 0, time.UTC),
+				Codepush: []frontend.CodepushEntry{
+					{
+						Name:        "hotfix-1",
+						Version:     "1.0.1",
+						CompatID:    "2",
+						URL:         server.URL + "/download/codepush.zip",
+						Checksum:    checksum,
+						Size:        99,
+						PublishedAt: time.Date(2026, 3, 13, 12, 30, 0, 0, time.UTC),
+					},
+				},
+			}
+			writeSignedCatalog(t, w, catalog, privateKey)
+		case "/download/codepush.zip":
+			bundleHandler.ServeHTTP(w, r)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	service := NewService(Options{
+		CurrentVersion:           "1.0.0",
+		TargetPath:               writeTempFile(t, "binary-data"),
+		Client:                   server.Client(),
+		FrontendManager:          manager,
+		FrontendCatalogURL:       server.URL + "/frontend/catalog.json",
+		FrontendCatalogPublicKey: base64.StdEncoding.EncodeToString(publicKey),
+	})
+	return service, manager
 }
 
 func sha256Sum(data []byte) string {

@@ -1,0 +1,56 @@
+{
+  "$id": "wailsrel.v1.ManifestArtifact.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "arch": {
+      "type": "string"
+    },
+    "assetName": {
+      "type": "string"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "format": {
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "os": {
+      "type": "string"
+    },
+    "path": {
+      "type": "string"
+    },
+    "size": {
+      "type": "integer"
+    },
+    "transport": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "path",
+    "assetName",
+    "os",
+    "arch",
+    "format",
+    "transport",
+    "checksum",
+    "size",
+    "url"
+  ],
+  "title": "Manifest Artifact",
+  "type": "object"
+}

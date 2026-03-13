@@ -110,6 +110,17 @@ func (DefaultBundler) BuildBundle(ctx context.Context, opts BundleOpts) (*Bundle
 	}
 
 	compatID := strings.TrimSpace(opts.CompatVer)
+	if strings.TrimSpace(opts.BindingsDir) != "" {
+		resolvedBindingsDir := opts.BindingsDir
+		if !filepath.IsAbs(resolvedBindingsDir) {
+			resolvedBindingsDir = filepath.Join(workDir, resolvedBindingsDir)
+		}
+		computedCompatID, err := CompatID(resolvedBindingsDir)
+		if err != nil {
+			return nil, err
+		}
+		compatID = computedCompatID
+	}
 	compatVersion := opts.CompatVersion
 	if compatID == "" && compatVersion > 0 {
 		compatID = strconv.Itoa(compatVersion)

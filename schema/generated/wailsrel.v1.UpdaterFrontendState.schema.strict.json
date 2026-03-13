@@ -1,0 +1,63 @@
+{
+  "$id": "wailsrel.v1.UpdaterFrontendState.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "active_bundle": {
+      "$ref": "wailsrel.v1.UpdaterFrontendBundleView.schema.strict.json"
+    },
+    "active_mode": {
+      "type": "string"
+    },
+    "available_codepush": {
+      "$ref": "wailsrel.v1.UpdaterFrontendCodepushView.schema.strict.json"
+    },
+    "available_experiments": {
+      "items": {
+        "$ref": "wailsrel.v1.UpdaterFrontendExperimentView.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "catalog_url": {
+      "type": "string"
+    },
+    "enabled": {
+      "type": "boolean"
+    },
+    "installed_codepush": {
+      "$ref": "wailsrel.v1.UpdaterFrontendBundleView.schema.strict.json"
+    },
+    "installed_experiments": {
+      "items": {
+        "$ref": "wailsrel.v1.UpdaterFrontendBundleView.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "last_checked_at": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "offline": {
+      "type": "boolean"
+    },
+    "selection": {
+      "type": "string"
+    },
+    "stale": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "enabled",
+    "catalog_url",
+    "last_error",
+    "offline",
+    "stale",
+    "active_mode",
+    "selection"
+  ],
+  "title": "Updater Frontend State",
+  "type": "object"
+}

@@ -1,0 +1,75 @@
+{
+  "$id": "wailsrel.v1.PublicDeltaManifestEntry.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifact": {
+      "type": "string"
+    },
+    "artifactKind": {
+      "type": "string"
+    },
+    "assetKey": {
+      "type": "string"
+    },
+    "fromSha256": {
+      "type": "string"
+    },
+    "fromSize": {
+      "type": "integer"
+    },
+    "fromVersion": {
+      "type": "string"
+    },
+    "patch": {
+      "type": "string"
+    },
+    "patchSha256": {
+      "type": "string"
+    },
+    "patchSize": {
+      "type": "integer"
+    },
+    "savingsBytes": {
+      "type": "integer"
+    },
+    "savingsPercent": {
+      "anyOf": [
+        {
+          "type": "number"
+        },
+        {
+          "enum": [
+            "Infinity",
+            "-Infinity",
+            "NaN"
+          ],
+          "type": "string"
+        }
+      ]
+    },
+    "toSha256": {
+      "type": "string"
+    },
+    "toSize": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "fromVersion",
+    "artifact",
+    "patch",
+    "assetKey",
+    "artifactKind",
+    "fromSha256",
+    "toSha256",
+    "patchSha256",
+    "fromSize",
+    "toSize",
+    "patchSize",
+    "savingsBytes",
+    "savingsPercent"
+  ],
+  "title": "Public Delta Manifest Entry",
+  "type": "object"
+}

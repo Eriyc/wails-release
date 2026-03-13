@@ -1,0 +1,87 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.PlatformAsset.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "arch": {
+          "type": "string"
+        },
+        "assetKey": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "compatId": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "format": {
+          "type": "string"
+        },
+        "logicalPath": {
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "os": {
+          "type": "string"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "sourceBranch": {
+          "type": "string"
+        },
+        "transport": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "logicalPath",
+        "assetKey",
+        "os",
+        "arch",
+        "format",
+        "transport",
+        "checksum",
+        "size",
+        "compatId",
+        "channel",
+        "force",
+        "sourceBranch",
+        "commitSha"
+      ],
+      "title": "Platform Asset",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.PlatformAsset.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.PlatformAsset.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

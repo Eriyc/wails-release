@@ -566,38 +566,59 @@ func (bm *BundleManager) installBundleLocked(ctx context.Context, bundle io.Read
 			return nil, fmt.Errorf("bundle checksum mismatch for %s", opts.FinalDir)
 		}
 	}
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	default:
+	}
 
 	finalDir := opts.FinalDir
 	backupDir := finalDir + ".old"
 	_ = os.RemoveAll(backupDir)
+	hasBackup := false
 	if _, err := os.Stat(finalDir); err == nil {
 		if err := os.Rename(finalDir, backupDir); err != nil {
 			return nil, err
 		}
+		hasBackup = true
+	} else if err != nil && !os.IsNotExist(err) {
+		return nil, err
 	}
 
 	if err := os.MkdirAll(filepath.Dir(finalDir), 0o755); err != nil {
-		_ = os.Rename(backupDir, finalDir)
+		if hasBackup {
+			_ = os.Rename(backupDir, finalDir)
+		}
 		return nil, err
 	}
 	if err := os.Rename(stagingDir, finalDir); err != nil {
-		_ = os.Rename(backupDir, finalDir)
+		if hasBackup {
+			_ = os.Rename(backupDir, finalDir)
+		}
 		return nil, err
 	}
-	_ = os.RemoveAll(backupDir)
+
+	rollbackInstall := func(cause error) (*BundleManifest, error) {
+		_ = os.RemoveAll(finalDir)
+		if hasBackup {
+			_ = os.Rename(backupDir, finalDir)
+		}
+		return nil, cause
+	}
 
 	if opts.RequireTrustFile {
 		if err := bm.writeInstallRecordLocked(*manifest); err != nil {
-			return nil, err
+			return rollbackInstall(err)
 		}
 	}
 
 	select {
 	case <-ctx.Done():
-		return nil, ctx.Err()
+		return rollbackInstall(ctx.Err())
 	default:
-		return manifest, nil
 	}
+	_ = os.RemoveAll(backupDir)
+	return manifest, nil
 }
 
 func (bm *BundleManager) validateInstalledBundleLocked(dir, expectedKind, expectedName string, requireTrustFile bool) (*BundleManifest, error) {

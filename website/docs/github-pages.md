@@ -4,15 +4,15 @@ sidebar_position: 5
 
 # Client and Hosting
 
-This page covers the runtime side of `wailsrel`: where clients fetch manifests from, what routes your server must expose, and how to wire the update packages into a Wails app.
+This page covers the runtime side of `wailsrel`: where clients fetch manifests from, what routes your external server must expose, and how to wire the update packages into a Wails app.
 
 ## GitHub Releases as the origin
 
-Use this when you want the updater to read directly from GitHub:
+Use this when you want CI to publish artifacts to GitHub Releases and an external server to consume them:
 
 ```yaml
 update:
-  manifest_url: "https://github.com/acme/myapp/releases/latest/download/manifest.json"
+  manifest_url: "https://releases.example.com/manifest"
 
 release:
   provider: github
@@ -20,7 +20,7 @@ release:
     repository: "acme/myapp"
 ```
 
-`wailsrel release` uploads `manifest.json`, any delta manifest, and all release assets to the tagged GitHub release. Clients can keep using the stable `releases/latest/download/manifest.json` URL.
+`wailsrel release` uploads `manifest.json/.pb`, `delta-manifest.json/.pb`, and release assets to the tagged GitHub release. `wailsrel index release` and `wailsrel index frontend` emit the internal indexes your server reads.
 
 ## Custom HTTP origin
 
@@ -28,58 +28,29 @@ Use this when you want stable URLs on your own domain:
 
 ```yaml
 update:
-  manifest_url: "https://releases.example.com/manifest.json"
+  manifest_url: "https://releases.example.com/manifest"
 
 release:
   provider: http
   http:
     base_url: "https://releases.example.com"
-    manifest_path: "/manifest.json"
-    delta_manifest_path: "/delta/manifest.json"
+    manifest_path: "/manifest"
+    delta_manifest_path: "/delta/manifest"
     download_path_prefix: "/download"
 ```
 
-Your server must expose:
+Your external server must expose:
 
-- `GET /manifest.json`
-- `GET /delta/manifest.json`
+- `GET /manifest`
+- `GET /delta/manifest`
+- `GET /frontend/catalog`
 - `GET /download/{tag}/{asset_name}`
 
 The manifest can be public even if downloads are protected. If the client uses an authenticated `http.Client`, both manifest and asset requests can carry the same bearer token or JWT.
 
-## Go gateway
-
-The Go gateway is a JWT-protected facade over GitHub Releases:
-
-```bash
-go install github.com/Eriyc/wailsrel/cmd/wailsrel-gateway@latest
-wailsrel-gateway
-```
-
-Required environment variables:
-
-- `WAILSREL_GATEWAY_GITHUB_REPOSITORY`
-- `WAILSREL_GATEWAY_GITHUB_TOKEN`
-- `WAILSREL_GATEWAY_JWKS_URL`
-- `WAILSREL_GATEWAY_JWT_ISSUER`
-- `WAILSREL_GATEWAY_JWT_AUDIENCE`
-
-Optional:
-
-- `WAILSREL_GATEWAY_ADDR` default `:8080`
-- `WAILSREL_GATEWAY_GITHUB_API_BASE_URL` default `https://api.github.com`
-
-Routes:
-
-- `GET /manifest.json`
-- `GET /delta/manifest.json`
-- `GET /download/{tag}/{asset_name}`
-
-Every request requires `Authorization: Bearer <jwt>`.
-
 ## Bun proxy example
 
-The Bun example is simpler if you only need a static bearer token:
+The Bun example is an external JS server. Use it as infrastructure, not as part of the Go module:
 
 ```bash
 cd examples/authenticated-release-proxy
@@ -89,7 +60,7 @@ export PROXY_AUTH_TOKEN=change-me
 bun run index.ts
 ```
 
-That proxy exposes the same three updater routes plus `GET /healthz`.
+That server should expose `/manifest`, `/delta/manifest`, `/frontend/catalog`, `/download/...`, and any auth/health routes you need.
 
 ## Native updater integration
 
@@ -113,7 +84,7 @@ manager := update.NewManager(update.ManagerOpts{
         CurrentHash:    currentHash,
         Channel:        "stable",
         NativeCompat:   "1",
-        ManifestURL:    "https://releases.example.com/manifest.json",
+        ManifestURL:    "https://releases.example.com/manifest",
     },
 })
 ```
@@ -122,7 +93,7 @@ manager := update.NewManager(update.ManagerOpts{
 
 ## Frontend runtime integration
 
-Frontend `codepush` and `experiments` now use a separate signed frontend catalog served by your authenticated proxy.
+Frontend `codepush` and `experiments` use a separate signed frontend catalog served by your authenticated proxy.
 
 Clients need:
 

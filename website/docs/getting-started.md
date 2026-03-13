@@ -58,7 +58,7 @@ delta:
     repository: "acme/myapp"
 
 update:
-  manifest_url: "https://github.com/acme/myapp/releases/latest/download/manifest.json"
+  manifest_url: "https://releases.example.com/manifest"
 
 release:
   provider: github
@@ -83,6 +83,8 @@ wailsrel doctor
 wailsrel build
 wailsrel delta
 wailsrel release
+wailsrel index release
+wailsrel index frontend
 ```
 
 - `build` runs your configured Wails-owned build hooks and stages the discovered artifacts in `dist/`
@@ -95,21 +97,22 @@ If you serve releases from your own domain, change the release and update sectio
 
 ```yaml
 update:
-  manifest_url: "https://releases.example.com/manifest.json"
+  manifest_url: "https://releases.example.com/manifest"
 
 release:
   provider: http
   http:
     base_url: "https://releases.example.com"
-    manifest_path: "/manifest.json"
-    delta_manifest_path: "/delta/manifest.json"
+    manifest_path: "/manifest"
+    delta_manifest_path: "/delta/manifest"
     download_path_prefix: "/download"
 ```
 
 That setup expects your server to expose:
 
-- `GET /manifest.json`
-- `GET /delta/manifest.json`
+- `GET /manifest`
+- `GET /delta/manifest`
+- `GET /frontend/catalog`
 - `GET /download/{tag}/{asset_name}`
 
-Use [Client and Hosting](./github-pages.md) for native manifest and gateway details, and [Frontend Runtime](./frontend-runtime.md) for client-side `codepush` and `experiments` integration.
+Use [Client and Hosting](./github-pages.md) for native manifest delivery, [Server Contract](./server-contract.md) for the external server rules, and [Frontend Runtime](./frontend-runtime.md) for client-side `codepush` and `experiments` integration.

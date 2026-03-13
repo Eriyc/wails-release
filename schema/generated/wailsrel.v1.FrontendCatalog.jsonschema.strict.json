@@ -1,0 +1,43 @@
+{
+  "$id": "wailsrel.v1.FrontendCatalog.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "codepush": {
+      "items": {
+        "$ref": "wailsrel.v1.FrontendCatalogBundle.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "experiments": {
+      "items": {
+        "$ref": "wailsrel.v1.FrontendCatalogBundle.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "schemaVersion": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    },
+    "signature": {
+      "type": "string"
+    },
+    "signedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "appId",
+    "signature"
+  ],
+  "title": "Frontend Catalog",
+  "type": "object"
+}

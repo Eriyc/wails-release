@@ -1,0 +1,19 @@
+{
+  "$id": "wailsrel.v1.UpdaterProgressEvent.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "downloaded": {
+      "type": "integer"
+    },
+    "total": {
+      "type": "integer"
+    }
+  },
+  "required": [
+    "downloaded",
+    "total"
+  ],
+  "title": "Updater Progress Event",
+  "type": "object"
+}

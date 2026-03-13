@@ -19,7 +19,9 @@ import (
 
 const (
 	ManifestAssetName      = "manifest.json"
+	ManifestAssetProtoName = "manifest.pb"
 	DeltaManifestAssetName = "delta-manifest.json"
+	DeltaManifestProtoName = "delta-manifest.pb"
 )
 
 type UploadAsset struct {
@@ -44,20 +46,27 @@ type PublishedAsset struct {
 type Bundle struct {
 	Manifest          *Manifest
 	ManifestPath      string
+	ManifestProtoPath string
 	DeltaManifestPath string
+	DeltaProtoPath    string
 	Artifacts         []PublishedAsset
 	FrontendBundles   []PublishedFrontendBundle
 	Uploads           []UploadAsset
 }
 
 type PublishedFrontendBundle struct {
-	Channel    string
-	Version    string
-	CompatID   string
-	AssetName  string
-	SourcePath string
-	Checksum   string
-	Size       int64
+	Kind         string
+	Name         string
+	Channel      string
+	Version      string
+	CompatID     string
+	AssetName    string
+	SourcePath   string
+	Checksum     string
+	Size         int64
+	Force        bool
+	SourceBranch string
+	CommitSHA    string
 }
 
 type BundleOptions struct {
@@ -66,6 +75,7 @@ type BundleOptions struct {
 	TempDir         string
 	Tag             string
 	Version         string
+	NativeCompatID  string
 	Resolver        Resolver
 	Artifacts       []build.Artifact
 	FrontendBundles []frontend.BundleArtifact
@@ -102,6 +112,10 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 			Checksum:    artifact.Checksum,
 			Size:        artifact.Size,
 			Metadata:    cloneMetadata(artifact.Metadata),
+		}
+		if compatID := strings.TrimSpace(opts.NativeCompatID); compatID != "" {
+			published.Metadata["compat_id"] = compatID
+			published.Metadata["native_compat"] = compatID
 		}
 
 		assetName := strings.TrimSpace(artifact.PublishName)
@@ -169,13 +183,18 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 		version := firstNonEmpty(bundle.Manifest.Version, bundle.Manifest.BundleVersion, opts.Version)
 		compatID := firstNonEmpty(bundle.Manifest.CompatID, fmt.Sprintf("%d", bundle.Manifest.CompatVersion))
 		publishedFrontendBundles = append(publishedFrontendBundles, PublishedFrontendBundle{
-			Channel:    bundle.Manifest.Channel,
-			Version:    version,
-			CompatID:   compatID,
-			AssetName:  assetName,
-			SourcePath: bundle.Path,
-			Checksum:   checksum,
-			Size:       size,
+			Kind:         strings.TrimSpace(bundle.Manifest.Kind),
+			Name:         strings.TrimSpace(bundle.Manifest.Name),
+			Channel:      bundle.Manifest.Channel,
+			Version:      version,
+			CompatID:     compatID,
+			AssetName:    assetName,
+			SourcePath:   bundle.Path,
+			Checksum:     checksum,
+			Size:         size,
+			Force:        bundle.Manifest.Force,
+			SourceBranch: strings.TrimSpace(bundle.Manifest.SourceBranch),
+			CommitSHA:    strings.TrimSpace(bundle.Manifest.CommitSHA),
 		})
 		uploads = append(uploads, UploadAsset{
 			Name:        assetName,
@@ -235,6 +254,7 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 	}
 
 	manifestPath := filepath.Join(opts.OutputDir, ManifestAssetName)
+	manifestProtoPath := filepath.Join(opts.OutputDir, ManifestAssetProtoName)
 	if opts.Delta != nil && opts.Delta.ManifestPath != "" {
 		manifest.Delta = &ManifestDelta{ManifestURL: opts.Resolver.DeltaManifestURL(opts.Tag)}
 	}
@@ -244,39 +264,49 @@ func PrepareBundle(opts BundleOptions) (*Bundle, error) {
 	if err := WriteManifest(manifest, manifestPath); err != nil {
 		return nil, err
 	}
+	if err := WriteManifest(manifest, manifestProtoPath); err != nil {
+		return nil, err
+	}
 	uploads = append(uploads, UploadAsset{
 		Name:        ManifestAssetName,
 		Path:        manifestPath,
 		ContentType: "application/json",
 	})
+	uploads = append(uploads, UploadAsset{
+		Name:        ManifestAssetProtoName,
+		Path:        manifestProtoPath,
+		ContentType: "application/x-protobuf",
+	})
 
 	bundle := &Bundle{
-		Manifest:        manifest,
-		ManifestPath:    manifestPath,
-		Artifacts:       publishedArtifacts,
-		FrontendBundles: publishedFrontendBundles,
-		Uploads:         uploads,
+		Manifest:          manifest,
+		ManifestPath:      manifestPath,
+		ManifestProtoPath: manifestProtoPath,
+		Artifacts:         publishedArtifacts,
+		FrontendBundles:   publishedFrontendBundles,
+		Uploads:           uploads,
 	}
 
 	if opts.Delta != nil && opts.Delta.ManifestPath != "" {
-		deltaManifestPath, deltaUploads, err := preparePublishedDeltaAssets(opts, tempDir)
+		deltaManifestPath, deltaProtoPath, deltaUploads, err := preparePublishedDeltaAssets(opts, tempDir)
 		if err != nil {
 			return nil, err
 		}
 		bundle.DeltaManifestPath = deltaManifestPath
+		bundle.DeltaProtoPath = deltaProtoPath
 		bundle.Uploads = append(bundle.Uploads, deltaUploads...)
 	}
 
 	return bundle, nil
 }
 
-func preparePublishedDeltaAssets(opts BundleOptions, tempDir string) (string, []UploadAsset, error) {
+func preparePublishedDeltaAssets(opts BundleOptions, tempDir string) (string, string, []UploadAsset, error) {
 	patchURLs := make(map[string]string, len(opts.Delta.Generated))
 	uploads := make([]UploadAsset, 0, len(opts.Delta.Generated)+1)
 	for _, generated := range opts.Delta.Generated {
 		artifact, ok := findArtifact(opts.Artifacts, generated.Artifact)
 		if !ok {
-			return "", nil, fmt.Errorf("missing build artifact for delta %s", generated.Artifact)
+			return "", "", nil, fmt.Errorf("missing build artifact for delta %s", generated.Artifact)
 		}
 		assetName := deltaAssetName(opts.App.Name, opts.Version, generated.FromVersion, artifact)
 		patchURLs[filepath.Clean(generated.Patch)] = opts.Resolver.ArtifactURL(opts.Tag, assetName)
@@ -289,18 +319,27 @@ func preparePublishedDeltaAssets(opts BundleOptions, tempDir string) (string, []
 
 	manifest, err := publishedDeltaManifest(opts.OutputDir, opts.Delta.Generated, patchURLs)
 	if err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
 	deltaManifestPath := filepath.Join(tempDir, DeltaManifestAssetName)
 	if err := delta.WriteManifest(manifest, deltaManifestPath); err != nil {
-		return "", nil, err
+		return "", "", nil, err
+	}
+	deltaProtoPath := filepath.Join(tempDir, DeltaManifestProtoName)
+	if err := delta.WriteManifest(manifest, deltaProtoPath); err != nil {
+		return "", "", nil, err
 	}
 	uploads = append(uploads, UploadAsset{
 		Name:        DeltaManifestAssetName,
 		Path:        deltaManifestPath,
 		ContentType: "application/json",
 	})
-	return deltaManifestPath, uploads, nil
+	uploads = append(uploads, UploadAsset{
+		Name:        DeltaManifestProtoName,
+		Path:        deltaProtoPath,
+		ContentType: "application/x-protobuf",
+	})
+	return deltaManifestPath, deltaProtoPath, uploads, nil
 }
 
 func publishedDeltaManifest(outputDir string, generated []delta.Generated, patchURLs map[string]string) (*delta.PatchManifest, error) {

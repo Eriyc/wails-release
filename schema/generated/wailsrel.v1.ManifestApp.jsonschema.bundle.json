@@ -1,0 +1,23 @@
+{
+  "$defs": {
+    "wailsrel.v1.ManifestApp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "identifier": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Manifest App",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.ManifestApp.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.ManifestApp.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

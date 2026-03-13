@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"time"
 
@@ -72,11 +73,10 @@ type ManifestFrontendBundle struct {
 }
 
 func WriteManifest(manifest *Manifest, path string) error {
-	data, err := json.MarshalIndent(manifest, "", "  ")
+	data, err := EncodeManifestFile(manifest, path)
 	if err != nil {
 		return err
 	}
-	data = append(data, '\n')
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
@@ -103,6 +103,23 @@ func ValidateManifest(manifest *Manifest) error {
 		return err
 	}
 	return schema.Validate(instance)
+}
+
+func EncodeManifestFile(manifest *Manifest, outputPath string) ([]byte, error) {
+	switch path.Ext(outputPath) {
+	case ".pb":
+		return EncodeManifestProtobuf(manifest)
+	default:
+		return EncodeManifestJSON(manifest)
+	}
+}
+
+func DecodeManifest(data []byte, contentType string) (*Manifest, error) {
+	message, err := decodeManifestProto(data, contentType)
+	if err != nil {
+		return nil, err
+	}
+	return manifestFromProto(message), nil
 }
 
 func anyJSON(data []byte) any {

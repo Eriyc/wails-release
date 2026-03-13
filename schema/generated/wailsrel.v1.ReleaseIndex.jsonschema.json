@@ -1,0 +1,67 @@
+{
+  "$id": "wailsrel.v1.ReleaseIndex.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(app_identifier)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(app_name)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(generated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(schema_version)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "properties": {
+    "appIdentifier": {
+      "default": "",
+      "type": "string"
+    },
+    "appName": {
+      "default": "",
+      "type": "string"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "releases": {
+      "items": {
+        "$ref": "wailsrel.v1.ReleaseEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "title": "Release Index",
+  "type": "object"
+}

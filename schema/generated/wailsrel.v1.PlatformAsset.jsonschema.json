@@ -1,0 +1,106 @@
+{
+  "$id": "wailsrel.v1.PlatformAsset.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(asset_key)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(commit_sha)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(compat_id)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(logical_path)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(published_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(source_branch)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "arch": {
+      "default": "",
+      "type": "string"
+    },
+    "assetKey": {
+      "default": "",
+      "type": "string"
+    },
+    "channel": {
+      "default": "",
+      "type": "string"
+    },
+    "checksum": {
+      "default": "",
+      "type": "string"
+    },
+    "commitSha": {
+      "default": "",
+      "type": "string"
+    },
+    "compatId": {
+      "default": "",
+      "type": "string"
+    },
+    "force": {
+      "default": false,
+      "type": "boolean"
+    },
+    "format": {
+      "default": "",
+      "type": "string"
+    },
+    "logicalPath": {
+      "default": "",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "os": {
+      "default": "",
+      "type": "string"
+    },
+    "publishedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "size": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "sourceBranch": {
+      "default": "",
+      "type": "string"
+    },
+    "transport": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Platform Asset",
+  "type": "object"
+}

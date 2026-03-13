@@ -1,0 +1,47 @@
+{
+  "$id": "wailsrel.v1.UpdateCheckOptions.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(currentHash)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(currentVersion)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(manifestUrl)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(nativeCompat)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "channel": {
+      "default": "",
+      "type": "string"
+    },
+    "current_hash": {
+      "default": "",
+      "type": "string"
+    },
+    "current_version": {
+      "default": "",
+      "type": "string"
+    },
+    "manifest_url": {
+      "default": "",
+      "type": "string"
+    },
+    "native_compat": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Update Check Options",
+  "type": "object"
+}

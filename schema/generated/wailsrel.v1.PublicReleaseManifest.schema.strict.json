@@ -1,0 +1,41 @@
+{
+  "$id": "wailsrel.v1.PublicReleaseManifest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "app": {
+      "$ref": "wailsrel.v1.ManifestApp.schema.strict.json"
+    },
+    "artifacts": {
+      "items": {
+        "$ref": "wailsrel.v1.ManifestArtifact.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "delta": {
+      "$ref": "wailsrel.v1.ManifestDelta.schema.strict.json"
+    },
+    "frontend_bundles": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "generated_at": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "release": {
+      "$ref": "wailsrel.v1.ManifestRelease.schema.strict.json"
+    },
+    "schema_version": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version"
+  ],
+  "title": "Public Release Manifest",
+  "type": "object"
+}

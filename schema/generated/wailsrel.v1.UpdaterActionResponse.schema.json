@@ -1,0 +1,33 @@
+{
+  "$id": "wailsrel.v1.UpdaterActionResponse.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(startedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "properties": {
+    "applied": {
+      "default": false,
+      "type": "boolean"
+    },
+    "error": {
+      "default": "",
+      "type": "string"
+    },
+    "message": {
+      "default": "",
+      "type": "string"
+    },
+    "restarted": {
+      "default": false,
+      "type": "boolean"
+    },
+    "started_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    }
+  },
+  "title": "Updater Action Response",
+  "type": "object"
+}

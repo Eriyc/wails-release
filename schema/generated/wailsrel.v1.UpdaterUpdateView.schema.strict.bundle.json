@@ -1,0 +1,77 @@
+{
+  "$defs": {
+    "wailsrel.v1.UpdaterUpdateView.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "artifact_hash": {
+          "type": "string"
+        },
+        "artifact_size": {
+          "type": "integer"
+        },
+        "artifact_url": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "delta_from_hash": {
+          "type": "string"
+        },
+        "delta_hash": {
+          "type": "string"
+        },
+        "delta_size": {
+          "type": "integer"
+        },
+        "delta_url": {
+          "type": "string"
+        },
+        "frontend_hash": {
+          "type": "string"
+        },
+        "frontend_only": {
+          "type": "boolean"
+        },
+        "frontend_size": {
+          "type": "integer"
+        },
+        "frontend_url": {
+          "type": "string"
+        },
+        "mandatory": {
+          "type": "boolean"
+        },
+        "release_notes": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "channel",
+        "release_notes",
+        "mandatory",
+        "artifact_url",
+        "artifact_hash",
+        "artifact_size",
+        "delta_url",
+        "delta_hash",
+        "delta_size",
+        "delta_from_hash",
+        "frontend_url",
+        "frontend_hash",
+        "frontend_size",
+        "frontend_only"
+      ],
+      "title": "Updater Update View",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterUpdateView.schema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterUpdateView.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

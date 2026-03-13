@@ -1,0 +1,42 @@
+{
+  "$id": "wailsrel.v1.UpdaterFrontendCodepushView.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checksum": {
+      "type": "string"
+    },
+    "compat_id": {
+      "type": "string"
+    },
+    "force": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string"
+    },
+    "published_at": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "size": {
+      "type": "integer"
+    },
+    "url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "compat_id",
+    "url",
+    "checksum",
+    "size",
+    "force"
+  ],
+  "title": "Updater Frontend Codepush View",
+  "type": "object"
+}

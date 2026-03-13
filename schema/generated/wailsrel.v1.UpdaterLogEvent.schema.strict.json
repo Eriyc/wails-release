@@ -1,0 +1,22 @@
+{
+  "$id": "wailsrel.v1.UpdaterLogEvent.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "at": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "level": {
+      "type": "string"
+    },
+    "message": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "level",
+    "message"
+  ],
+  "title": "Updater Log Event",
+  "type": "object"
+}

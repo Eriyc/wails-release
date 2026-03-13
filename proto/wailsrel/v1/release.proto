@@ -1,0 +1,86 @@
+syntax = "proto3";
+
+package wailsrel.v1;
+
+option go_package = "github.com/Eriyc/wailsrel/gen/go/wailsrel/v1;wailsrelv1";
+
+import "google/protobuf/timestamp.proto";
+import "wailsrel/v1/frontend.proto";
+
+message ReleaseIndex {
+  int32 schema_version = 1;
+  string app_name = 2;
+  string app_identifier = 3;
+  google.protobuf.Timestamp generated_at = 4;
+  repeated ReleaseEntry releases = 5;
+}
+
+message ReleaseEntry {
+  string tag = 1;
+  string version = 2;
+  string channel = 3;
+  string compat_id = 4;
+  bool force = 5;
+  google.protobuf.Timestamp published_at = 6;
+  string source_branch = 7;
+  string commit_sha = 8;
+  repeated PlatformAsset assets = 9;
+  repeated BundleEntry frontend_bundles = 10;
+  map<string, string> metadata = 11;
+}
+
+message PlatformAsset {
+  string logical_path = 1;
+  string asset_key = 2;
+  string os = 3;
+  string arch = 4;
+  string format = 5;
+  string transport = 6;
+  string checksum = 7;
+  int64 size = 8;
+  string compat_id = 9;
+  string channel = 10;
+  bool force = 11;
+  google.protobuf.Timestamp published_at = 12;
+  string source_branch = 13;
+  string commit_sha = 14;
+  map<string, string> metadata = 15;
+}
+
+message PublicReleaseManifest {
+  int32 schema_version = 1;
+  ManifestApp app = 2;
+  ManifestRelease release = 3;
+  google.protobuf.Timestamp generated_at = 4;
+  repeated ManifestArtifact artifacts = 5;
+  ManifestDelta delta = 6;
+  repeated BundleEntry frontend_bundles = 7;
+}
+
+message ManifestApp {
+  string name = 1;
+  string identifier = 2;
+}
+
+message ManifestRelease {
+  string tag = 1;
+  string version = 2;
+  string provider = 3;
+}
+
+message ManifestArtifact {
+  string path = 1;
+  string asset_name = 2;
+  string os = 3;
+  string arch = 4;
+  string format = 5;
+  string transport = 6;
+  string checksum = 7;
+  int64 size = 8;
+  string url = 9;
+  map<string, string> metadata = 10;
+}
+
+message ManifestDelta {
+  string manifest_url = 1;
+}

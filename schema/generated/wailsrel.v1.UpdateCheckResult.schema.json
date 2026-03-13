@@ -1,0 +1,19 @@
+{
+  "$id": "wailsrel.v1.UpdateCheckResult.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available": {
+      "default": false,
+      "type": "boolean"
+    },
+    "frontend": {
+      "$ref": "wailsrel.v1.UpdateFrontendInfo.schema.json"
+    },
+    "native": {
+      "$ref": "wailsrel.v1.UpdateInfo.schema.json"
+    }
+  },
+  "title": "Update Check Result",
+  "type": "object"
+}

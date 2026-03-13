@@ -1,0 +1,63 @@
+{
+  "$id": "wailsrel.v1.ReleaseEntry.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "wailsrel.v1.PlatformAsset.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "commit_sha": {
+      "type": "string"
+    },
+    "compat_id": {
+      "type": "string"
+    },
+    "force": {
+      "type": "boolean"
+    },
+    "frontend_bundles": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.schema.strict.json"
+      },
+      "type": "array"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "published_at": {
+      "$ref": "google.protobuf.Timestamp.schema.strict.json"
+    },
+    "source_branch": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "tag",
+    "version",
+    "channel",
+    "compat_id",
+    "force",
+    "source_branch",
+    "commit_sha"
+  ],
+  "title": "Release Entry",
+  "type": "object"
+}

@@ -1,0 +1,46 @@
+{
+  "$id": "wailsrel.v1.UpdaterFrontendExperimentView.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "checksum": {
+      "type": "string"
+    },
+    "compatId": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "publishedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "size": {
+      "type": "integer"
+    },
+    "url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "compatId",
+    "url",
+    "checksum",
+    "size",
+    "displayName",
+    "description"
+  ],
+  "title": "Updater Frontend Experiment View",
+  "type": "object"
+}

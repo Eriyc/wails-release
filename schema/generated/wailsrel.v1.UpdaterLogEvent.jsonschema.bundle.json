@@ -1,0 +1,32 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterLogEvent.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        },
+        "level": {
+          "default": "",
+          "type": "string"
+        },
+        "message": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Updater Log Event",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterLogEvent.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterLogEvent.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

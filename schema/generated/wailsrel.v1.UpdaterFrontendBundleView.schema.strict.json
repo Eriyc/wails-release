@@ -1,0 +1,39 @@
+{
+  "$id": "wailsrel.v1.UpdaterFrontendBundleView.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "channel": {
+      "type": "string"
+    },
+    "commit_sha": {
+      "type": "string"
+    },
+    "compat_id": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "source_branch": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "kind",
+    "name",
+    "version",
+    "compat_id",
+    "channel",
+    "source_branch",
+    "commit_sha"
+  ],
+  "title": "Updater Frontend Bundle View",
+  "type": "object"
+}

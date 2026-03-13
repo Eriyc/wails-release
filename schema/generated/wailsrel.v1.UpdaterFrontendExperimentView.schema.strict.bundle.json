@@ -1,0 +1,58 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterFrontendExperimentView.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "compat_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "published_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "compat_id",
+        "url",
+        "checksum",
+        "size",
+        "display_name",
+        "description"
+      ],
+      "title": "Updater Frontend Experiment View",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterFrontendExperimentView.schema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendExperimentView.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

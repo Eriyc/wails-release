@@ -1,0 +1,84 @@
+{
+  "$id": "wailsrel.v1.ReleaseEntry.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(commit_sha)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(compat_id)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(frontend_bundles)$": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(published_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(source_branch)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "assets": {
+      "items": {
+        "$ref": "wailsrel.v1.PlatformAsset.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "channel": {
+      "default": "",
+      "type": "string"
+    },
+    "commitSha": {
+      "default": "",
+      "type": "string"
+    },
+    "compatId": {
+      "default": "",
+      "type": "string"
+    },
+    "force": {
+      "default": false,
+      "type": "boolean"
+    },
+    "frontendBundles": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "publishedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "sourceBranch": {
+      "default": "",
+      "type": "string"
+    },
+    "tag": {
+      "default": "",
+      "type": "string"
+    },
+    "version": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Release Entry",
+  "type": "object"
+}

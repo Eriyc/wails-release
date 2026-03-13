@@ -1,0 +1,199 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterFrontendBundleView.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "compatId": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "sourceBranch": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "version",
+        "compatId",
+        "channel",
+        "sourceBranch",
+        "commitSha"
+      ],
+      "title": "Updater Frontend Bundle View",
+      "type": "object"
+    },
+    "wailsrel.v1.UpdaterFrontendCodepushView.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "compatId": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "compatId",
+        "url",
+        "checksum",
+        "size",
+        "force"
+      ],
+      "title": "Updater Frontend Codepush View",
+      "type": "object"
+    },
+    "wailsrel.v1.UpdaterFrontendExperimentView.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "compatId": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "compatId",
+        "url",
+        "checksum",
+        "size",
+        "displayName",
+        "description"
+      ],
+      "title": "Updater Frontend Experiment View",
+      "type": "object"
+    },
+    "wailsrel.v1.UpdaterFrontendState.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "activeBundle": {
+          "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendBundleView.jsonschema.strict.json"
+        },
+        "activeMode": {
+          "type": "string"
+        },
+        "availableCodepush": {
+          "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendCodepushView.jsonschema.strict.json"
+        },
+        "availableExperiments": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendExperimentView.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "catalogUrl": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "installedCodepush": {
+          "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendBundleView.jsonschema.strict.json"
+        },
+        "installedExperiments": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendBundleView.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "lastCheckedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "lastError": {
+          "type": "string"
+        },
+        "offline": {
+          "type": "boolean"
+        },
+        "selection": {
+          "type": "string"
+        },
+        "stale": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "enabled",
+        "catalogUrl",
+        "lastError",
+        "offline",
+        "stale",
+        "activeMode",
+        "selection"
+      ],
+      "title": "Updater Frontend State",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterFrontendState.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendState.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -1,0 +1,58 @@
+{
+  "$id": "wailsrel.v1.UpdateInfo.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "artifactHash": {
+      "type": "string"
+    },
+    "artifactSize": {
+      "type": "integer"
+    },
+    "artifactUrl": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "deltaFromHash": {
+      "type": "string"
+    },
+    "deltaHash": {
+      "type": "string"
+    },
+    "deltaSize": {
+      "type": "integer"
+    },
+    "deltaUrl": {
+      "type": "string"
+    },
+    "frontend": {
+      "$ref": "wailsrel.v1.UpdateFrontendInfo.jsonschema.strict.json"
+    },
+    "mandatory": {
+      "type": "boolean"
+    },
+    "releaseNotes": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "version",
+    "channel",
+    "releaseNotes",
+    "mandatory",
+    "artifactUrl",
+    "artifactHash",
+    "artifactSize",
+    "deltaUrl",
+    "deltaHash",
+    "deltaSize",
+    "deltaFromHash"
+  ],
+  "title": "Update Info",
+  "type": "object"
+}

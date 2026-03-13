@@ -1,0 +1,74 @@
+{
+  "$id": "wailsrel.v1.FrontendCatalogBundle.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "assetKey": {
+      "type": "string"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "checksum": {
+      "type": "string"
+    },
+    "commitSha": {
+      "type": "string"
+    },
+    "compatId": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "displayName": {
+      "type": "string"
+    },
+    "force": {
+      "type": "boolean"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "publishedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "size": {
+      "type": "integer"
+    },
+    "sourceBranch": {
+      "type": "string"
+    },
+    "tag": {
+      "type": "string"
+    },
+    "url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "version",
+    "compatId",
+    "url",
+    "checksum",
+    "size",
+    "force",
+    "displayName",
+    "description",
+    "kind",
+    "channel",
+    "assetKey",
+    "tag",
+    "sourceBranch",
+    "commitSha"
+  ],
+  "title": "Frontend Catalog Bundle",
+  "type": "object"
+}

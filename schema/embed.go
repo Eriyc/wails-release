@@ -7,7 +7,7 @@ import (
 
 // FS contains the repository JSON schema files.
 //
-//go:embed *.schema.json
+//go:embed *.schema.json generated/*.json
 var FS embed.FS
 
 func ReadFile(name string) ([]byte, error) {

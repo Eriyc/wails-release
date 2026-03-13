@@ -1,0 +1,30 @@
+{
+  "$id": "wailsrel.v1.FrontendIndex.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "appId": {
+      "type": "string"
+    },
+    "bundles": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "schemaVersion": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "appId"
+  ],
+  "title": "Frontend Index",
+  "type": "object"
+}

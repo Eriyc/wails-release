@@ -1,0 +1,206 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterCheckResponse.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(checked_at)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        }
+      },
+      "properties": {
+        "available": {
+          "default": false,
+          "type": "boolean"
+        },
+        "checkedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.json"
+        },
+        "error": {
+          "default": "",
+          "type": "string"
+        },
+        "update": {
+          "$ref": "#/$defs/wailsrel.v1.UpdaterUpdateView.jsonschema.json"
+        }
+      },
+      "title": "Updater Check Response",
+      "type": "object"
+    },
+    "wailsrel.v1.UpdaterUpdateView.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(artifact_hash)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(artifact_size)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(artifact_url)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(delta_from_hash)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(delta_hash)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(delta_size)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(delta_url)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(frontend_hash)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(frontend_only)$": {
+          "default": false,
+          "type": "boolean"
+        },
+        "^(frontend_size)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(frontend_url)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(release_notes)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "artifactHash": {
+          "default": "",
+          "type": "string"
+        },
+        "artifactSize": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "artifactUrl": {
+          "default": "",
+          "type": "string"
+        },
+        "channel": {
+          "default": "",
+          "type": "string"
+        },
+        "deltaFromHash": {
+          "default": "",
+          "type": "string"
+        },
+        "deltaHash": {
+          "default": "",
+          "type": "string"
+        },
+        "deltaSize": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "deltaUrl": {
+          "default": "",
+          "type": "string"
+        },
+        "frontendHash": {
+          "default": "",
+          "type": "string"
+        },
+        "frontendOnly": {
+          "default": false,
+          "type": "boolean"
+        },
+        "frontendSize": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "frontendUrl": {
+          "default": "",
+          "type": "string"
+        },
+        "mandatory": {
+          "default": false,
+          "type": "boolean"
+        },
+        "releaseNotes": {
+          "default": "",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Updater Update View",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterCheckResponse.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterCheckResponse.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

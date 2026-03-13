@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package wailsrel.v1;
+
+option go_package = "github.com/Eriyc/wailsrel/gen/go/wailsrel/v1;wailsrelv1";
+
+import "google/protobuf/timestamp.proto";
+
+message UpdateCheckOptions {
+  string current_version = 1;
+  string current_hash = 2;
+  string native_compat = 3;
+  string channel = 4;
+  string manifest_url = 5;
+}
+
+message UpdateFrontendInfo {
+  string channel = 1;
+  string version = 2;
+  string compat_id = 3;
+  string url = 4;
+  string hash = 5;
+  int64 size = 6;
+}
+
+message UpdateInfo {
+  string version = 1;
+  string channel = 2;
+  string release_notes = 3;
+  bool mandatory = 4;
+  string artifact_url = 5;
+  string artifact_hash = 6;
+  int64 artifact_size = 7;
+  string delta_url = 8;
+  string delta_hash = 9;
+  int64 delta_size = 10;
+  string delta_from_hash = 11;
+  UpdateFrontendInfo frontend = 12;
+}
+
+message UpdateCheckResult {
+  bool available = 1;
+  UpdateInfo native = 2;
+  UpdateFrontendInfo frontend = 3;
+}
+
+message UpdaterUpdateView {
+  string version = 1;
+  string channel = 2;
+  string release_notes = 3;
+  bool mandatory = 4;
+  string artifact_url = 5;
+  string artifact_hash = 6;
+  int64 artifact_size = 7;
+  string delta_url = 8;
+  string delta_hash = 9;
+  int64 delta_size = 10;
+  string delta_from_hash = 11;
+  string frontend_url = 12;
+  string frontend_hash = 13;
+  int64 frontend_size = 14;
+  bool frontend_only = 15;
+}
+
+message UpdaterState {
+  string manifest_url = 1;
+  string current_version = 2;
+  string current_hash = 3;
+  string channel = 4;
+  string native_compat = 5;
+  string target_path = 6;
+  string temp_dir = 7;
+  google.protobuf.Timestamp last_checked_at = 8;
+  bool pending_restart = 9;
+  UpdaterUpdateView available_update = 10;
+  map<string, string> metadata = 11;
+  repeated string notes = 12;
+  string last_error = 13;
+}
+
+message UpdaterCheckResponse {
+  google.protobuf.Timestamp checked_at = 1;
+  bool available = 2;
+  UpdaterUpdateView update = 3;
+  string error = 4;
+}
+
+message UpdaterActionResponse {
+  google.protobuf.Timestamp started_at = 1;
+  bool applied = 2;
+  bool restarted = 3;
+  string message = 4;
+  string error = 5;
+}
+
+message UpdaterLogEvent {
+  string level = 1;
+  string message = 2;
+  google.protobuf.Timestamp at = 3;
+}
+
+message UpdaterProgressEvent {
+  int64 downloaded = 1;
+  int64 total = 2;
+}
+
+message UpdaterRelaunchRequest {
+  string executable = 1;
+  repeated string args = 2;
+}
+
+message UpdaterFrontendBundleView {
+  string kind = 1;
+  string name = 2;
+  string version = 3;
+  string compat_id = 4;
+  string channel = 5;
+  string source_branch = 6;
+  string commit_sha = 7;
+}
+
+message UpdaterFrontendCodepushView {
+  string name = 1;
+  string version = 2;
+  string compat_id = 3;
+  string url = 4;
+  string checksum = 5;
+  int64 size = 6;
+  bool force = 7;
+  google.protobuf.Timestamp published_at = 8;
+}
+
+message UpdaterFrontendExperimentView {
+  string name = 1;
+  string version = 2;
+  string compat_id = 3;
+  string url = 4;
+  string checksum = 5;
+  int64 size = 6;
+  string display_name = 7;
+  string description = 8;
+  google.protobuf.Timestamp published_at = 9;
+}
+
+message UpdaterFrontendState {
+  bool enabled = 1;
+  string catalog_url = 2;
+  google.protobuf.Timestamp last_checked_at = 3;
+  string last_error = 4;
+  bool offline = 5;
+  bool stale = 6;
+  string active_mode = 7;
+  string selection = 8;
+  UpdaterFrontendBundleView active_bundle = 9;
+  UpdaterFrontendBundleView installed_codepush = 10;
+  repeated UpdaterFrontendBundleView installed_experiments = 11;
+  UpdaterFrontendCodepushView available_codepush = 12;
+  repeated UpdaterFrontendExperimentView available_experiments = 13;
+}

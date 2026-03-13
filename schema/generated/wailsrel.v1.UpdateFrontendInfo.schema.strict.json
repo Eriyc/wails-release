@@ -1,0 +1,35 @@
+{
+  "$id": "wailsrel.v1.UpdateFrontendInfo.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "channel": {
+      "type": "string"
+    },
+    "compat_id": {
+      "type": "string"
+    },
+    "hash": {
+      "type": "string"
+    },
+    "size": {
+      "type": "integer"
+    },
+    "url": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "channel",
+    "version",
+    "compat_id",
+    "url",
+    "hash",
+    "size"
+  ],
+  "title": "Update Frontend Info",
+  "type": "object"
+}

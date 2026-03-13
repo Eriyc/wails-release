@@ -79,7 +79,49 @@ wailsrel bundle
 wailsrel bundle --channel beta
 ```
 
-This command uses `frontend.build_command`, `frontend.build_dir`, and `frontend.compat_version`.
+This command uses `frontend.build_command`, `frontend.build_dir`, and computes `compat_id` from `frontend.bindings_dir`. `frontend.compat_version` is legacy warning-only config during migration.
+
+## `compat id`
+
+Print the deterministic compat ID derived from the frontend bindings:
+
+```bash
+wailsrel compat id
+wailsrel compat id ./frontend/bindings
+```
+
+## `index release`
+
+Emit `release-index.json` and `release-index.pb` from discovered release outputs:
+
+```bash
+wailsrel index release
+```
+
+## `index frontend`
+
+Emit `frontend-index.json` and `frontend-index.pb` from discovered frontend bundles:
+
+```bash
+wailsrel index frontend
+```
+
+## `manifest encode`
+
+Re-encode a release or delta manifest between JSON and protobuf:
+
+```bash
+wailsrel manifest encode --kind release --input dist/manifest.json --output dist/manifest.pb
+wailsrel manifest encode --kind delta --input dist/delta-manifest.pb --output dist/delta-manifest.json
+```
+
+## `catalog verify`
+
+Verify a signed frontend catalog:
+
+```bash
+wailsrel catalog verify --path frontend-catalog.json --public-key "$PUBLIC_KEY" --app-id com.example.myapp
+```
 
 ## `channel <name>`
 

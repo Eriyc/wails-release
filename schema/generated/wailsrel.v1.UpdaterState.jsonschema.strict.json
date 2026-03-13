@@ -1,0 +1,68 @@
+{
+  "$id": "wailsrel.v1.UpdaterState.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "availableUpdate": {
+      "$ref": "wailsrel.v1.UpdaterUpdateView.jsonschema.strict.json"
+    },
+    "channel": {
+      "type": "string"
+    },
+    "currentHash": {
+      "type": "string"
+    },
+    "currentVersion": {
+      "type": "string"
+    },
+    "lastCheckedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "lastError": {
+      "type": "string"
+    },
+    "manifestUrl": {
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "nativeCompat": {
+      "type": "string"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "pendingRestart": {
+      "type": "boolean"
+    },
+    "targetPath": {
+      "type": "string"
+    },
+    "tempDir": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "manifestUrl",
+    "currentVersion",
+    "currentHash",
+    "channel",
+    "nativeCompat",
+    "targetPath",
+    "tempDir",
+    "pendingRestart",
+    "lastError"
+  ],
+  "title": "Updater State",
+  "type": "object"
+}

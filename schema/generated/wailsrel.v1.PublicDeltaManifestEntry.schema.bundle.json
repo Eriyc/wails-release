@@ -1,0 +1,207 @@
+{
+  "$defs": {
+    "wailsrel.v1.PublicDeltaManifestEntry.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(artifactKind)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(assetKey)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(fromSha256)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(fromSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(fromVersion)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(patchSha256)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(patchSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(savingsBytes)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(savingsPercent)$": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "^(toSha256)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(toSize)$": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "artifact": {
+          "default": "",
+          "type": "string"
+        },
+        "artifact_kind": {
+          "default": "",
+          "type": "string"
+        },
+        "asset_key": {
+          "default": "",
+          "type": "string"
+        },
+        "from_sha256": {
+          "default": "",
+          "type": "string"
+        },
+        "from_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "from_version": {
+          "default": "",
+          "type": "string"
+        },
+        "patch": {
+          "default": "",
+          "type": "string"
+        },
+        "patch_sha256": {
+          "default": "",
+          "type": "string"
+        },
+        "patch_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "savings_bytes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "savings_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "to_sha256": {
+          "default": "",
+          "type": "string"
+        },
+        "to_size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Public Delta Manifest Entry",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.PublicDeltaManifestEntry.schema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.PublicDeltaManifestEntry.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

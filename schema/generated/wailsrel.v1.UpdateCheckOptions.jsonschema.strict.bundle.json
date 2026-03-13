@@ -1,0 +1,37 @@
+{
+  "$defs": {
+    "wailsrel.v1.UpdateCheckOptions.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "channel": {
+          "type": "string"
+        },
+        "currentHash": {
+          "type": "string"
+        },
+        "currentVersion": {
+          "type": "string"
+        },
+        "manifestUrl": {
+          "type": "string"
+        },
+        "nativeCompat": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "currentVersion",
+        "currentHash",
+        "nativeCompat",
+        "channel",
+        "manifestUrl"
+      ],
+      "title": "Update Check Options",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdateCheckOptions.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdateCheckOptions.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

@@ -16,18 +16,18 @@ import (
 var appVersion = "0.1.0"
 
 type appConfig struct {
-	AppName        string
-	SourceLabel    string
-	BaseURL        string
-	ManifestURL    string
+	AppName                  string
+	SourceLabel              string
+	BaseURL                  string
+	ManifestURL              string
 	FrontendCatalogURL       string
 	FrontendCatalogPublicKey string
-	CurrentVersion string
-	Channel        string
-	NativeCompat   string
-	Token          string
-	TargetPath     string
-	TempDir        string
+	CurrentVersion           string
+	Channel                  string
+	NativeCompat             string
+	Token                    string
+	TargetPath               string
+	TempDir                  string
 }
 
 type UpdateService struct {
@@ -39,22 +39,22 @@ func loadConfig() appConfig {
 	baseURL := strings.TrimRight(firstNonEmpty(os.Getenv("EXAMPLE_PROXY_BASE_URL"), "http://127.0.0.1:8787"), "/")
 	manifestURL := strings.TrimSpace(os.Getenv("EXAMPLE_PROXY_MANIFEST_URL"))
 	if manifestURL == "" && baseURL != "" {
-		manifestURL = baseURL + "/manifest.json"
+		manifestURL = baseURL + "/manifest"
 	}
 
 	return appConfig{
-		AppName:        "Authenticated HTTP Example",
-		SourceLabel:    "HTTP proxy with bearer auth",
-		BaseURL:        baseURL,
-		ManifestURL:    manifestURL,
+		AppName:                  "Authenticated HTTP Example",
+		SourceLabel:              "HTTP proxy with bearer auth",
+		BaseURL:                  baseURL,
+		ManifestURL:              manifestURL,
 		FrontendCatalogURL:       strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_URL")),
 		FrontendCatalogPublicKey: strings.TrimSpace(os.Getenv("EXAMPLE_FRONTEND_CATALOG_PUBLIC_KEY")),
-		CurrentVersion: firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
-		Channel:        firstNonEmpty(os.Getenv("EXAMPLE_UPDATE_CHANNEL"), "stable"),
-		NativeCompat:   strings.TrimSpace(os.Getenv("EXAMPLE_NATIVE_COMPAT")),
-		Token:          strings.TrimSpace(os.Getenv("EXAMPLE_PROXY_TOKEN")),
-		TargetPath:     firstNonEmpty(os.Getenv("EXAMPLE_TARGET_PATH"), wailsupdate.DefaultTargetPath()),
-		TempDir:        firstNonEmpty(os.Getenv("EXAMPLE_TEMP_DIR"), filepath.Join(os.TempDir(), "wailsrel-http-example")),
+		CurrentVersion:           firstNonEmpty(os.Getenv("EXAMPLE_CURRENT_VERSION"), appVersion),
+		Channel:                  firstNonEmpty(os.Getenv("EXAMPLE_UPDATE_CHANNEL"), "stable"),
+		NativeCompat:             strings.TrimSpace(os.Getenv("EXAMPLE_NATIVE_COMPAT")),
+		Token:                    strings.TrimSpace(os.Getenv("EXAMPLE_PROXY_TOKEN")),
+		TargetPath:               firstNonEmpty(os.Getenv("EXAMPLE_TARGET_PATH"), wailsupdate.DefaultTargetPath()),
+		TempDir:                  firstNonEmpty(os.Getenv("EXAMPLE_TEMP_DIR"), filepath.Join(os.TempDir(), "wailsrel-http-example")),
 	}
 }
 
@@ -69,16 +69,16 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 	}
 
 	service := wailsupdate.NewService(wailsupdate.Options{
-		ManifestURL:    cfg.ManifestURL,
-		FrontendCatalogURL: cfg.FrontendCatalogURL,
+		ManifestURL:              cfg.ManifestURL,
+		FrontendCatalogURL:       cfg.FrontendCatalogURL,
 		FrontendCatalogPublicKey: cfg.FrontendCatalogPublicKey,
-		CurrentVersion: cfg.CurrentVersion,
-		Channel:        cfg.Channel,
-		NativeCompat:   cfg.NativeCompat,
-		TargetPath:     cfg.TargetPath,
-		TempDir:        cfg.TempDir,
-		Client:         client,
-		FrontendManager: frontendManager,
+		CurrentVersion:           cfg.CurrentVersion,
+		Channel:                  cfg.Channel,
+		NativeCompat:             cfg.NativeCompat,
+		TargetPath:               cfg.TargetPath,
+		TempDir:                  cfg.TempDir,
+		Client:                   client,
+		FrontendManager:          frontendManager,
 		DescribeState: func(state *wailsupdate.State) {
 			if state.Metadata == nil {
 				state.Metadata = map[string]string{}
@@ -89,7 +89,7 @@ func NewUpdateService(cfg appConfig) *UpdateService {
 			state.Metadata["authConfigured"] = boolString(cfg.Token != "")
 			state.Notes = append(state.Notes,
 				"EXAMPLE_PROXY_TOKEN is sent as a bearer token on all updater HTTP requests from this app.",
-				"The Bun proxy keeps manifests stable at /manifest.json and rewrites artifact URLs back to /download/{tag}/{asset_name}.",
+				"The external JS server keeps manifests stable at /manifest and rewrites asset keys back to /download/{tag}/{asset_name}.",
 				"ApplyPending installs the matched frontend bundle first and stages the native binary when a native update is also available.",
 			)
 			if strings.TrimSpace(cfg.Token) == "" {

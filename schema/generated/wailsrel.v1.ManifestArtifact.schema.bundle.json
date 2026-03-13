@@ -1,0 +1,74 @@
+{
+  "$defs": {
+    "wailsrel.v1.ManifestArtifact.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(assetName)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "arch": {
+          "default": "",
+          "type": "string"
+        },
+        "asset_name": {
+          "default": "",
+          "type": "string"
+        },
+        "checksum": {
+          "default": "",
+          "type": "string"
+        },
+        "format": {
+          "default": "",
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "os": {
+          "default": "",
+          "type": "string"
+        },
+        "path": {
+          "default": "",
+          "type": "string"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "transport": {
+          "default": "",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Manifest Artifact",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.ManifestArtifact.schema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.ManifestArtifact.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

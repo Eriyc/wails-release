@@ -176,23 +176,37 @@ func TestPrepareBundleCanonicalNamesAndManifest(t *testing.T) {
 		t.Fatalf("validate manifest: %v", err)
 	}
 
-	var sawManifest, sawDeltaManifest, sawDeltaPatch bool
+	var sawManifest, sawManifestProto, sawDeltaManifest, sawDeltaManifestProto, sawDeltaPatch bool
 	for _, upload := range bundle.Uploads {
 		switch upload.Name {
 		case ManifestAssetName:
 			sawManifest = true
+		case ManifestAssetProtoName:
+			sawManifestProto = true
 		case DeltaManifestAssetName:
 			sawDeltaManifest = true
+		case DeltaManifestProtoName:
+			sawDeltaManifestProto = true
 		}
 		if strings.Contains(upload.Name, "delta-from-v1.0.0") {
 			sawDeltaPatch = true
 		}
 	}
-	if !sawManifest || !sawDeltaManifest || !sawDeltaPatch {
-		t.Fatalf("missing expected uploads: manifest=%t deltaManifest=%t deltaPatch=%t", sawManifest, sawDeltaManifest, sawDeltaPatch)
+	if !sawManifest || !sawManifestProto || !sawDeltaManifest || !sawDeltaManifestProto || !sawDeltaPatch {
+		t.Fatalf(
+			"missing expected uploads: manifest=%t manifestProto=%t deltaManifest=%t deltaManifestProto=%t deltaPatch=%t",
+			sawManifest,
+			sawManifestProto,
+			sawDeltaManifest,
+			sawDeltaManifestProto,
+			sawDeltaPatch,
+		)
 	}
 	if _, err := os.Stat(bundle.DeltaManifestPath); err != nil {
 		t.Fatalf("expected delta manifest file %s: %v", bundle.DeltaManifestPath, err)
+	}
+	if _, err := os.Stat(bundle.DeltaProtoPath); err != nil {
+		t.Fatalf("expected delta manifest protobuf file %s: %v", bundle.DeltaProtoPath, err)
 	}
 }
 
@@ -373,6 +387,7 @@ func TestPrepareBundleIncludesFrontendBundles(t *testing.T) {
 	slices.Sort(uploadNames)
 	expectedUploads := []string{
 		ManifestAssetName,
+		ManifestAssetProtoName,
 		"MyApp-1.2.3-linux-amd64-appimage.AppImage",
 		"frontend-beta-1.2.3.zip",
 		"frontend-stable-1.2.3.zip",

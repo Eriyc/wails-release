@@ -1,0 +1,116 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.PublicDeltaManifest.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "algorithm": {
+          "type": "string"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "patches": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.PublicDeltaManifestEntry.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "schema_version": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "algorithm"
+      ],
+      "title": "Public Delta Manifest",
+      "type": "object"
+    },
+    "wailsrel.v1.PublicDeltaManifestEntry.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "artifact": {
+          "type": "string"
+        },
+        "artifact_kind": {
+          "type": "string"
+        },
+        "asset_key": {
+          "type": "string"
+        },
+        "from_sha256": {
+          "type": "string"
+        },
+        "from_size": {
+          "type": "integer"
+        },
+        "from_version": {
+          "type": "string"
+        },
+        "patch": {
+          "type": "string"
+        },
+        "patch_sha256": {
+          "type": "string"
+        },
+        "patch_size": {
+          "type": "integer"
+        },
+        "savings_bytes": {
+          "type": "integer"
+        },
+        "savings_percent": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "enum": [
+                "Infinity",
+                "-Infinity",
+                "NaN"
+              ],
+              "type": "string"
+            }
+          ]
+        },
+        "to_sha256": {
+          "type": "string"
+        },
+        "to_size": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "from_version",
+        "artifact",
+        "patch",
+        "asset_key",
+        "artifact_kind",
+        "from_sha256",
+        "to_sha256",
+        "patch_sha256",
+        "from_size",
+        "to_size",
+        "patch_size",
+        "savings_bytes",
+        "savings_percent"
+      ],
+      "title": "Public Delta Manifest Entry",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.PublicDeltaManifest.schema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.PublicDeltaManifest.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

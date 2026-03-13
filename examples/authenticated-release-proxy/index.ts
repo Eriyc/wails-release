@@ -1,3 +1,10 @@
+import { fromBinary, fromJsonString, toBinary, toJson } from "@bufbuild/protobuf";
+
+import type { PublicDeltaManifest } from "../../gen/ts/wailsrel/v1/delta_pb.ts";
+import { PublicDeltaManifestSchema } from "../../gen/ts/wailsrel/v1/delta_pb.ts";
+import type { PublicReleaseManifest } from "../../gen/ts/wailsrel/v1/release_pb.ts";
+import { PublicReleaseManifestSchema } from "../../gen/ts/wailsrel/v1/release_pb.ts";
+
 type GitHubAsset = {
   id: number;
   name: string;
@@ -10,40 +17,14 @@ type GitHubRelease = {
   assets: GitHubAsset[];
 };
 
-type ReleaseManifest = {
-  release?: {
-    tag?: string;
-    provider?: string;
-  };
-  artifacts?: Array<{
-    asset_name?: string;
-    url?: string;
-  }>;
-  delta?: {
-    manifest_url?: string;
-  };
-  patches?: Array<{
-    url?: string;
-  }>;
-  frontend_bundles?: Array<{
-    url?: string;
-  }>;
-};
-
-type DeltaManifest = {
-  patches?: Array<{
-    patch?: string;
-  }>;
-};
-
 type CachedValue<T> = {
   expiresAt: number;
   value: T;
 };
 
 const repository = requiredEnv("GITHUB_REPOSITORY");
-const githubToken = requiredEnv("GITHUB_TOKEN");
-const authToken = requiredEnv("PROXY_AUTH_TOKEN");
+const githubToken = optionalEnv("GITHUB_TOKEN");
+const authToken = (Bun.env.PROXY_AUTH_TOKEN || "").trim();
 const apiBaseUrl = (Bun.env.GITHUB_API_BASE_URL || "https://api.github.com").trim().replace(/\/$/, "");
 const host = (Bun.env.HOST || "127.0.0.1").trim();
 const port = Number((Bun.env.PORT || "8787").trim());
@@ -64,31 +45,37 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-function unauthorized(message = "unauthorized"): Response {
-  return json({ error: message }, 401);
+function optionalEnv(name: string): string {
+  return Bun.env[name]?.trim() || "";
 }
 
-function notFound(message = "not found"): Response {
-  return json({ error: message }, 404);
-}
-
-function badGateway(message = "bad gateway"): Response {
-  return json({ error: message }, 502);
-}
-
-function json(body: unknown, status = 200): Response {
+function responseJSON(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body, null, 2), {
     status,
     headers: { "content-type": "application/json" },
   });
 }
 
+function unauthorized(message = "unauthorized"): Response {
+  return responseJSON({ error: message }, 401);
+}
+
+function notFound(message = "not found"): Response {
+  return responseJSON({ error: message }, 404);
+}
+
+function badGateway(message = "bad gateway"): Response {
+  return responseJSON({ error: message }, 502);
+}
+
 function githubHeaders(accept: string, request?: Request): HeadersInit {
   const headers: Record<string, string> = {
     accept,
-    authorization: `Bearer ${githubToken}`,
-    "user-agent": "wailsrel-authenticated-release-proxy",
+    "user-agent": "wailsrel-contract-http-example",
   };
+  if (githubToken) {
+    headers.authorization = `Bearer ${githubToken}`;
+  }
   const range = request?.headers.get("range");
   if (range) {
     headers.range = range;
@@ -106,14 +93,23 @@ async function fetchGitHubJSON<T>(url: string): Promise<T> {
   return response.json() as Promise<T>;
 }
 
+async function fetchGitHubBytes(asset: GitHubAsset): Promise<Uint8Array> {
+  const response = await fetch(asset.url, {
+    headers: githubHeaders("application/octet-stream"),
+    redirect: "follow",
+  });
+  if (!response.ok) {
+    throw new Error(`asset fetch failed: ${response.status}`);
+  }
+  return new Uint8Array(await response.arrayBuffer());
+}
+
 async function latestRelease(): Promise<GitHubRelease> {
   const now = Date.now();
   if (cache.latest && cache.latest.expiresAt > now) {
     return cache.latest.value;
   }
-  const release = await fetchGitHubJSON<GitHubRelease>(
-    `${apiBaseUrl}/repos/${repository}/releases/latest`,
-  );
+  const release = await fetchGitHubJSON<GitHubRelease>(`${apiBaseUrl}/repos/${repository}/releases/latest`);
   cache.latest = { value: release, expiresAt: now + cacheTtlMs };
   cache.byTag.set(release.tag_name, { value: release, expiresAt: now + cacheTtlMs });
   return release;
@@ -136,71 +132,79 @@ function findAsset(release: GitHubRelease, name: string): GitHubAsset | undefine
   return release.assets.find((asset) => asset.name === name);
 }
 
-async function fetchAssetJSON<T>(asset: GitHubAsset): Promise<T> {
-  const response = await fetch(asset.url, {
-    headers: githubHeaders("application/octet-stream"),
-    redirect: "follow",
-  });
-  if (!response.ok) {
-    throw new Error(`asset fetch failed: ${response.status}`);
-  }
-  return response.json() as Promise<T>;
+function prefersProtobuf(request: Request): boolean {
+  return (request.headers.get("accept") || "").includes("application/x-protobuf");
 }
 
 function proxyURL(origin: string, tag: string, assetName: string): string {
   return `${origin}/download/${encodeURIComponent(tag)}/${encodeURIComponent(assetName)}`;
 }
 
-function filenameFromURL(value: string | undefined): string | undefined {
+function assetNameFromValue(value: string | undefined): string | undefined {
   if (!value) {
     return undefined;
   }
   try {
     const url = new URL(value);
-    return url.pathname.split("/").pop() || undefined;
+    const parts = url.pathname.split("/");
+    return parts[parts.length - 1] || undefined;
   } catch {
-    return value.split("/").pop();
+    const parts = value.split("/");
+    return parts[parts.length - 1] || undefined;
   }
 }
 
-function rewriteManifest(manifest: ReleaseManifest, tag: string, origin: string): ReleaseManifest {
+async function loadReleaseManifest(release: GitHubRelease): Promise<PublicReleaseManifest> {
+  const asset = findAsset(release, "manifest.pb") || findAsset(release, "manifest.json");
+  if (!asset) {
+    throw new Error("manifest asset not found on the latest release");
+  }
+  const bytes = await fetchGitHubBytes(asset);
+  if (asset.name.endsWith(".pb")) {
+    return fromBinary(PublicReleaseManifestSchema, bytes);
+  }
+  return fromJsonString(PublicReleaseManifestSchema, new TextDecoder().decode(bytes));
+}
+
+async function loadDeltaManifest(release: GitHubRelease): Promise<PublicDeltaManifest> {
+  const asset = findAsset(release, "delta-manifest.pb") || findAsset(release, "delta-manifest.json");
+  if (!asset) {
+    throw new Error("delta-manifest asset not found on the latest release");
+  }
+  const bytes = await fetchGitHubBytes(asset);
+  if (asset.name.endsWith(".pb")) {
+    return fromBinary(PublicDeltaManifestSchema, bytes);
+  }
+  return fromJsonString(PublicDeltaManifestSchema, new TextDecoder().decode(bytes));
+}
+
+function rewriteReleaseManifest(manifest: PublicReleaseManifest, tag: string, origin: string): PublicReleaseManifest {
   const copy = structuredClone(manifest);
   if (copy.release) {
     copy.release.tag = tag;
     copy.release.provider = "http";
   }
-
-  for (const artifact of copy.artifacts || []) {
-    if (artifact.asset_name) {
-      artifact.url = proxyURL(origin, tag, artifact.asset_name);
+  for (const artifact of copy.artifacts) {
+    if (artifact.assetName) {
+      artifact.url = proxyURL(origin, tag, artifact.assetName);
     }
   }
-
   if (copy.delta) {
-    copy.delta.manifest_url = `${origin}/delta/manifest.json`;
+    copy.delta.manifestUrl = `${origin}/delta/manifest`;
   }
-
-  for (const patch of copy.patches || []) {
-    const assetName = filenameFromURL(patch.url);
-    if (assetName) {
-      patch.url = proxyURL(origin, tag, assetName);
-    }
-  }
-
-  for (const bundle of copy.frontend_bundles || []) {
-    const assetName = filenameFromURL(bundle.url);
+  for (const bundle of copy.frontendBundles) {
+    const assetName = assetNameFromValue(bundle.url || bundle.assetKey);
     if (assetName) {
       bundle.url = proxyURL(origin, tag, assetName);
     }
   }
-
   return copy;
 }
 
-function rewriteDeltaManifest(manifest: DeltaManifest, tag: string, origin: string): DeltaManifest {
+function rewriteDeltaManifest(manifest: PublicDeltaManifest, tag: string, origin: string): PublicDeltaManifest {
   const copy = structuredClone(manifest);
-  for (const patch of copy.patches || []) {
-    const assetName = filenameFromURL(patch.patch);
+  for (const patch of copy.patches) {
+    const assetName = assetNameFromValue(patch.patch || patch.assetKey);
     if (assetName) {
       patch.patch = proxyURL(origin, tag, assetName);
     }
@@ -208,9 +212,33 @@ function rewriteDeltaManifest(manifest: DeltaManifest, tag: string, origin: stri
   return copy;
 }
 
+function manifestResponse(request: Request, manifest: PublicReleaseManifest): Response {
+  if (prefersProtobuf(request)) {
+    return new Response(toBinary(PublicReleaseManifestSchema, manifest), {
+      headers: { "content-type": "application/x-protobuf" },
+    });
+  }
+  return new Response(`${JSON.stringify(toJson(PublicReleaseManifestSchema, manifest), null, 2)}\n`, {
+    headers: { "content-type": "application/json" },
+  });
+}
+
+function deltaResponse(request: Request, manifest: PublicDeltaManifest): Response {
+  if (prefersProtobuf(request)) {
+    return new Response(toBinary(PublicDeltaManifestSchema, manifest), {
+      headers: { "content-type": "application/x-protobuf" },
+    });
+  }
+  return new Response(`${JSON.stringify(toJson(PublicDeltaManifestSchema, manifest), null, 2)}\n`, {
+    headers: { "content-type": "application/json" },
+  });
+}
+
 function isAuthorized(request: Request): boolean {
-  const expected = `Bearer ${authToken}`;
-  return request.headers.get("authorization") === expected;
+  if (!authToken) {
+    return true;
+  }
+  return request.headers.get("authorization") === `Bearer ${authToken}`;
 }
 
 async function streamAsset(request: Request, asset: GitHubAsset): Promise<Response> {
@@ -221,7 +249,6 @@ async function streamAsset(request: Request, asset: GitHubAsset): Promise<Respon
   if (!response.ok) {
     return badGateway(`github asset fetch failed: ${response.status}`);
   }
-
   const headers = new Headers();
   for (const name of [
     "content-type",
@@ -238,7 +265,6 @@ async function streamAsset(request: Request, asset: GitHubAsset): Promise<Respon
       headers.set(name, value);
     }
   }
-
   return new Response(response.body, {
     status: response.status,
     headers,
@@ -248,13 +274,21 @@ async function streamAsset(request: Request, asset: GitHubAsset): Promise<Respon
 function infoPage(): Response {
   return new Response(
     [
-      "wailsrel authenticated release proxy",
+      "wailsrel http example server",
       "",
       "Routes:",
-      "  GET /manifest.json",
-      "  GET /delta/manifest.json",
-      "  GET /download/:tag/:asset_name  (requires Authorization: Bearer <token>)",
+      "  GET /manifest",
+      "  GET /delta/manifest",
+      "  GET /frontend/catalog (501 in this example)",
+      "  GET /download/:tag/:asset_name",
       "  GET /healthz",
+      "",
+      "Negotiation:",
+      "  Accept: application/json",
+      "  Accept: application/x-protobuf",
+      "",
+      "GitHub auth:",
+      "  GITHUB_TOKEN is optional for public repositories",
     ].join("\n"),
     { headers: { "content-type": "text/plain; charset=utf-8" } },
   );
@@ -270,29 +304,21 @@ const server = Bun.serve({
       if (url.pathname === "/") {
         return infoPage();
       }
-
       if (url.pathname === "/healthz") {
-        return json({ ok: true, repository, cacheTtlMs });
+        return responseJSON({ ok: true, repository, cacheTtlMs, authRequired: authToken !== "" });
       }
-
-      if (url.pathname === "/manifest.json") {
+      if (url.pathname === "/manifest") {
         const release = await latestRelease();
-        const asset = findAsset(release, "manifest.json");
-        if (!asset) {
-          return notFound("manifest.json not found on the latest release");
-        }
-        const manifest = await fetchAssetJSON<ReleaseManifest>(asset);
-        return json(rewriteManifest(manifest, release.tag_name, url.origin));
+        const manifest = rewriteReleaseManifest(await loadReleaseManifest(release), release.tag_name, url.origin);
+        return manifestResponse(request, manifest);
       }
-
-      if (url.pathname === "/delta/manifest.json") {
+      if (url.pathname === "/delta/manifest") {
         const release = await latestRelease();
-        const asset = findAsset(release, "delta-manifest.json");
-        if (!asset) {
-          return notFound("delta-manifest.json not found on the latest release");
-        }
-        const manifest = await fetchAssetJSON<DeltaManifest>(asset);
-        return json(rewriteDeltaManifest(manifest, release.tag_name, url.origin));
+        const manifest = rewriteDeltaManifest(await loadDeltaManifest(release), release.tag_name, url.origin);
+        return deltaResponse(request, manifest);
+      }
+      if (url.pathname === "/frontend/catalog") {
+        return responseJSON({ error: "frontend catalog signing is external and not implemented in this example" }, 501);
       }
 
       const downloadMatch = url.pathname.match(/^\/download\/([^/]+)\/([^/]+)$/);
@@ -317,4 +343,4 @@ const server = Bun.serve({
   },
 });
 
-console.log(`wailsrel proxy listening on http://${server.hostname}:${server.port}`);
+console.log(`wailsrel http example server listening on http://${server.hostname}:${server.port}`);

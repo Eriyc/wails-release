@@ -1,0 +1,57 @@
+{
+  "$defs": {
+    "wailsrel.v1.UpdaterFrontendBundleView.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(commit_sha)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(compat_id)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(source_branch)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "channel": {
+          "default": "",
+          "type": "string"
+        },
+        "commitSha": {
+          "default": "",
+          "type": "string"
+        },
+        "compatId": {
+          "default": "",
+          "type": "string"
+        },
+        "kind": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "sourceBranch": {
+          "default": "",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Updater Frontend Bundle View",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterFrontendBundleView.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterFrontendBundleView.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

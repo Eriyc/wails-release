@@ -102,9 +102,6 @@ func (c *Config) Validate() []ValidationError {
 	}
 
 	if c.Frontend.Enabled {
-		if c.Frontend.CompatVersion <= 0 {
-			errs = append(errs, ValidationError{Field: "frontend.compat_version", Message: "must be greater than zero", Fatal: true})
-		}
 		if c.Frontend.CompatAutoCheck && strings.TrimSpace(c.Frontend.BindingsDir) == "" {
 			errs = append(errs, ValidationError{Field: "frontend.bindings_dir", Message: "must not be empty", Fatal: true})
 		}

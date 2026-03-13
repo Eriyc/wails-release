@@ -20,8 +20,8 @@ type githubRelease struct {
 }
 
 type githubAsset struct {
-	Name               string `json:"name"`
-	BrowserDownloadURL string `json:"browser_download_url"`
+	Name string `json:"name"`
+	URL  string `json:"url"`
 }
 
 type urlReleaseManifest struct {
@@ -182,7 +182,7 @@ func (g *Generator) listGitHubReleases(ctx context.Context) ([]githubRelease, er
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "wailsrel")
-	if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
+	if token := firstNonEmptyString(strings.TrimSpace(g.authToken), strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
@@ -256,12 +256,13 @@ func (g *Generator) downloadAssetToCache(ctx context.Context, asset githubAsset,
 	}
 	defer cleanup()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, asset.BrowserDownloadURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, asset.URL, nil)
 	if err != nil {
 		return err
 	}
+	req.Header.Set("Accept", "application/octet-stream")
 	req.Header.Set("User-Agent", "wailsrel")
-	if token := strings.TrimSpace(os.Getenv("GITHUB_TOKEN")); token != "" {
+	if token := firstNonEmptyString(strings.TrimSpace(g.authToken), strings.TrimSpace(os.Getenv("GITHUB_TOKEN"))); token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
 
@@ -270,7 +271,6 @@ func (g *Generator) downloadAssetToCache(ctx context.Context, asset githubAsset,
 		return err
 	}
 	defer resp.Body.Close()
-
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 		return fmt.Errorf("download %s: %s", asset.Name, strings.TrimSpace(string(body)))
@@ -336,6 +336,15 @@ func (g *Generator) downloadURLArtifactToCache(ctx context.Context, artifact url
 		return err
 	}
 	return nil
+}
+
+func firstNonEmptyString(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
 }
 
 func materializeDownloadedAsset(downloadPath, assetName, targetPath string, kind ArtifactKind) error {

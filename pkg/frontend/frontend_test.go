@@ -275,6 +275,125 @@ func TestBundleManagerCleanupRemovesIncompatibleBundles(t *testing.T) {
 	}
 }
 
+func TestBundleManagerInstallCodepushRollsBackWhenInstallRecordWriteFails(t *testing.T) {
+	root := t.TempDir()
+	manager := &BundleManager{
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(root, ".wailsrel"),
+	}
+
+	initialPath := writeTestBundleArchive(t, root, "codepush-initial", BundleManifest{
+		Kind:          BundleKindCodepush,
+		Name:          "hotfix-0",
+		Version:       "1.0.0",
+		CompatID:      "2",
+		CompatVersion: 2,
+	}, map[string]string{
+		"index.html": "<title>hotfix-0</title>\n",
+	})
+	rewriteBundleChecksum(t, initialPath)
+	initialFile, err := os.Open(initialPath)
+	if err != nil {
+		t.Fatalf("open initial codepush: %v", err)
+	}
+	defer initialFile.Close()
+	if err := manager.InstallCodepush(context.Background(), initialFile); err != nil {
+		t.Fatalf("install initial codepush: %v", err)
+	}
+
+	if err := os.MkdirAll(manager.installRecordPath(BundleKindCodepush, "hotfix-1"), 0o755); err != nil {
+		t.Fatalf("block new install record path: %v", err)
+	}
+
+	updatePath := writeTestBundleArchive(t, root, "codepush-update", BundleManifest{
+		Kind:          BundleKindCodepush,
+		Name:          "hotfix-1",
+		Version:       "1.0.1",
+		CompatID:      "2",
+		CompatVersion: 2,
+	}, map[string]string{
+		"index.html": "<title>hotfix-1</title>\n",
+	})
+	rewriteBundleChecksum(t, updatePath)
+	updateFile, err := os.Open(updatePath)
+	if err != nil {
+		t.Fatalf("open updated codepush: %v", err)
+	}
+	defer updateFile.Close()
+
+	err = manager.InstallCodepush(context.Background(), updateFile)
+	if err == nil {
+		t.Fatal("expected install record write failure")
+	}
+
+	installed, err := manager.LoadInstalledCodepush()
+	if err != nil {
+		t.Fatalf("load installed codepush after rollback: %v", err)
+	}
+	if installed == nil || installed.Version != "1.0.0" {
+		t.Fatalf("expected original codepush to remain installed, got %+v", installed)
+	}
+}
+
+func TestBundleManagerInstallCodepushDoesNotSwapBundleWhenContextCancelled(t *testing.T) {
+	root := t.TempDir()
+	manager := &BundleManager{
+		NativeCompat: "2",
+		OverrideRoot: filepath.Join(root, ".wailsrel"),
+	}
+
+	initialPath := writeTestBundleArchive(t, root, "codepush-initial", BundleManifest{
+		Kind:          BundleKindCodepush,
+		Name:          "hotfix-0",
+		Version:       "1.0.0",
+		CompatID:      "2",
+		CompatVersion: 2,
+	}, map[string]string{
+		"index.html": "<title>hotfix-0</title>\n",
+	})
+	rewriteBundleChecksum(t, initialPath)
+	initialFile, err := os.Open(initialPath)
+	if err != nil {
+		t.Fatalf("open initial codepush: %v", err)
+	}
+	defer initialFile.Close()
+	if err := manager.InstallCodepush(context.Background(), initialFile); err != nil {
+		t.Fatalf("install initial codepush: %v", err)
+	}
+
+	updatePath := writeTestBundleArchive(t, root, "codepush-update", BundleManifest{
+		Kind:          BundleKindCodepush,
+		Name:          "hotfix-1",
+		Version:       "1.0.1",
+		CompatID:      "2",
+		CompatVersion: 2,
+	}, map[string]string{
+		"index.html": "<title>hotfix-1</title>\n",
+	})
+	rewriteBundleChecksum(t, updatePath)
+	updateFile, err := os.Open(updatePath)
+	if err != nil {
+		t.Fatalf("open updated codepush: %v", err)
+	}
+	defer updateFile.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	err = manager.InstallCodepush(ctx, updateFile)
+	if err != context.Canceled {
+		t.Fatalf("expected context cancellation, got %v", err)
+	}
+
+	installed, err := manager.LoadInstalledCodepush()
+	if err != nil {
+		t.Fatalf("load installed codepush after cancellation: %v", err)
+	}
+	if installed == nil || installed.Version != "1.0.0" {
+		t.Fatalf("expected original codepush to remain installed, got %+v", installed)
+	}
+}
+
 func installTestBundle(t *testing.T, manager *BundleManager, root, name string, manifest BundleManifest, files map[string]string) {
 	t.Helper()
 

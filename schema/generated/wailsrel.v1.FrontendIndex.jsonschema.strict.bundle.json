@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.BundleEntry.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "assetKey": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "commitSha": {
+          "type": "string"
+        },
+        "compatId": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "displayName": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "publishedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "sourceBranch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "tag",
+        "kind",
+        "name",
+        "version",
+        "compatId",
+        "assetKey",
+        "checksum",
+        "size",
+        "force",
+        "channel",
+        "sourceBranch",
+        "commitSha",
+        "displayName",
+        "description",
+        "url"
+      ],
+      "title": "Bundle Entry",
+      "type": "object"
+    },
+    "wailsrel.v1.FrontendIndex.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "appId": {
+          "type": "string"
+        },
+        "bundles": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.BundleEntry.jsonschema.strict.json"
+          },
+          "type": "array"
+        },
+        "generatedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "schemaVersion": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "appId"
+      ],
+      "title": "Frontend Index",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.FrontendIndex.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.FrontendIndex.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

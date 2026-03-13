@@ -1,0 +1,106 @@
+{
+  "$id": "wailsrel.v1.UpdaterState.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(available_update)$": {
+      "$ref": "wailsrel.v1.UpdaterUpdateView.jsonschema.json"
+    },
+    "^(current_hash)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(current_version)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(last_checked_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(last_error)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(manifest_url)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(native_compat)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(pending_restart)$": {
+      "default": false,
+      "type": "boolean"
+    },
+    "^(target_path)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(temp_dir)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "availableUpdate": {
+      "$ref": "wailsrel.v1.UpdaterUpdateView.jsonschema.json"
+    },
+    "channel": {
+      "default": "",
+      "type": "string"
+    },
+    "currentHash": {
+      "default": "",
+      "type": "string"
+    },
+    "currentVersion": {
+      "default": "",
+      "type": "string"
+    },
+    "lastCheckedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "lastError": {
+      "default": "",
+      "type": "string"
+    },
+    "manifestUrl": {
+      "default": "",
+      "type": "string"
+    },
+    "metadata": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "propertyNames": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "nativeCompat": {
+      "default": "",
+      "type": "string"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "pendingRestart": {
+      "default": false,
+      "type": "boolean"
+    },
+    "targetPath": {
+      "default": "",
+      "type": "string"
+    },
+    "tempDir": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Updater State",
+  "type": "object"
+}

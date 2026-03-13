@@ -41,11 +41,15 @@ func NewRootCommand() *cobra.Command {
 		newInitCmd(opts),
 		newDoctorCmd(opts),
 		newStatusCmd(opts),
+		newCompatCmd(opts),
 		newBumpCmd(opts),
 		newBuildCmd(opts),
 		newDeltaCmd(opts),
 		newBundleCmd(opts),
 		newChannelCmd(opts),
+		newIndexCmd(opts),
+		newManifestCmd(opts),
+		newCatalogCmd(opts),
 		newReleaseCmd(opts),
 	)
 

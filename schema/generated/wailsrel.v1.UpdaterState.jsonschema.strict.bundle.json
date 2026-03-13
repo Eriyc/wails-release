@@ -1,0 +1,150 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterState.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "availableUpdate": {
+          "$ref": "#/$defs/wailsrel.v1.UpdaterUpdateView.jsonschema.strict.json"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "currentHash": {
+          "type": "string"
+        },
+        "currentVersion": {
+          "type": "string"
+        },
+        "lastCheckedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        },
+        "lastError": {
+          "type": "string"
+        },
+        "manifestUrl": {
+          "type": "string"
+        },
+        "metadata": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "propertyNames": {
+            "type": "string"
+          },
+          "type": "object"
+        },
+        "nativeCompat": {
+          "type": "string"
+        },
+        "notes": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "pendingRestart": {
+          "type": "boolean"
+        },
+        "targetPath": {
+          "type": "string"
+        },
+        "tempDir": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "manifestUrl",
+        "currentVersion",
+        "currentHash",
+        "channel",
+        "nativeCompat",
+        "targetPath",
+        "tempDir",
+        "pendingRestart",
+        "lastError"
+      ],
+      "title": "Updater State",
+      "type": "object"
+    },
+    "wailsrel.v1.UpdaterUpdateView.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "artifactHash": {
+          "type": "string"
+        },
+        "artifactSize": {
+          "type": "integer"
+        },
+        "artifactUrl": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "deltaFromHash": {
+          "type": "string"
+        },
+        "deltaHash": {
+          "type": "string"
+        },
+        "deltaSize": {
+          "type": "integer"
+        },
+        "deltaUrl": {
+          "type": "string"
+        },
+        "frontendHash": {
+          "type": "string"
+        },
+        "frontendOnly": {
+          "type": "boolean"
+        },
+        "frontendSize": {
+          "type": "integer"
+        },
+        "frontendUrl": {
+          "type": "string"
+        },
+        "mandatory": {
+          "type": "boolean"
+        },
+        "releaseNotes": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "channel",
+        "releaseNotes",
+        "mandatory",
+        "artifactUrl",
+        "artifactHash",
+        "artifactSize",
+        "deltaUrl",
+        "deltaHash",
+        "deltaSize",
+        "deltaFromHash",
+        "frontendUrl",
+        "frontendHash",
+        "frontendSize",
+        "frontendOnly"
+      ],
+      "title": "Updater Update View",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterState.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterState.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

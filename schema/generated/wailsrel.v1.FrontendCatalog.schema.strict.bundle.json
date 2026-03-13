@@ -1,0 +1,128 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.FrontendCatalog.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "app_id": {
+          "type": "string"
+        },
+        "codepush": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.FrontendCatalogBundle.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "experiments": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.FrontendCatalogBundle.schema.strict.json"
+          },
+          "type": "array"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "schema_version": {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        "signature": {
+          "type": "string"
+        },
+        "signed_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        }
+      },
+      "required": [
+        "schema_version",
+        "app_id",
+        "signature"
+      ],
+      "title": "Frontend Catalog",
+      "type": "object"
+    },
+    "wailsrel.v1.FrontendCatalogBundle.schema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "asset_key": {
+          "type": "string"
+        },
+        "channel": {
+          "type": "string"
+        },
+        "checksum": {
+          "type": "string"
+        },
+        "commit_sha": {
+          "type": "string"
+        },
+        "compat_id": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "force": {
+          "type": "boolean"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "published_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.strict.json"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "source_branch": {
+          "type": "string"
+        },
+        "tag": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "compat_id",
+        "url",
+        "checksum",
+        "size",
+        "force",
+        "display_name",
+        "description",
+        "kind",
+        "channel",
+        "asset_key",
+        "tag",
+        "source_branch",
+        "commit_sha"
+      ],
+      "title": "Frontend Catalog Bundle",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.FrontendCatalog.schema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.FrontendCatalog.schema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

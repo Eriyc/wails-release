@@ -1,0 +1,27 @@
+{
+  "$defs": {
+    "wailsrel.v1.ManifestRelease.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "default": "",
+          "type": "string"
+        },
+        "tag": {
+          "default": "",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Manifest Release",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.ManifestRelease.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.ManifestRelease.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

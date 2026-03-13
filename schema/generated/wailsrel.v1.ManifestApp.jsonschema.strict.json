@@ -1,0 +1,19 @@
+{
+  "$id": "wailsrel.v1.ManifestApp.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "identifier": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "identifier"
+  ],
+  "title": "Manifest App",
+  "type": "object"
+}

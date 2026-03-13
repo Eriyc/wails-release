@@ -71,11 +71,10 @@ func BuildManifest(outputDir string, generated []Generated) *PatchManifest {
 }
 
 func WriteManifest(manifest *PatchManifest, path string) error {
-	data, err := json.MarshalIndent(manifest, "", "  ")
+	data, err := EncodeManifestFile(manifest, path)
 	if err != nil {
 		return err
 	}
-	data = append(data, '\n')
 
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

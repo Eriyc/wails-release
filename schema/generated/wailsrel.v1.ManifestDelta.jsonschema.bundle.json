@@ -1,0 +1,25 @@
+{
+  "$defs": {
+    "wailsrel.v1.ManifestDelta.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(manifest_url)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "manifestUrl": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Manifest Delta",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.ManifestDelta.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.ManifestDelta.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

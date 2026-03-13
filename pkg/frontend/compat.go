@@ -21,6 +21,10 @@ type CompatSnapshot struct {
 	UpdatedAt     time.Time `json:"updated_at"`
 }
 
+func CompatID(bindingsDir string) (string, error) {
+	return ComputeCompatHash(bindingsDir)
+}
+
 func ComputeCompatHash(bindings any) (string, error) {
 	paths, readPath, err := compatHasher(bindings)
 	if err != nil {

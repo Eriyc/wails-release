@@ -1,0 +1,19 @@
+{
+  "$id": "wailsrel.v1.UpdaterRelaunchRequest.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "args": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "executable": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Updater Relaunch Request",
+  "type": "object"
+}

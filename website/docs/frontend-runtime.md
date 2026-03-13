@@ -56,8 +56,8 @@ Configure the updater service with the pinned catalog URL and Ed25519 public key
 client := &http.Client{Timeout: 45 * time.Second}
 
 service := wailsupdate.NewService(wailsupdate.Options{
-    ManifestURL:               "https://releases.example.com/manifest.json",
-    FrontendCatalogURL:        "https://proxy.example.com/frontend/catalog.json",
+    ManifestURL:               "https://releases.example.com/manifest",
+    FrontendCatalogURL:        "https://proxy.example.com/frontend/catalog",
     FrontendCatalogPublicKey:  os.Getenv("FRONTEND_CATALOG_PUBLIC_KEY"),
     FrontendAutoCheck:         true,
     CurrentVersion:            appVersion,

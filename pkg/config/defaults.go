@@ -33,9 +33,6 @@ func (c *Config) applyDefaults() {
 		c.Delta.OldArtifacts.CacheDir = ".wailsrel/cache"
 	}
 
-	if c.Frontend.CompatVersion == 0 {
-		c.Frontend.CompatVersion = 1
-	}
 	if !c.Frontend.Enabled && c.Frontend.BuildDir == "" && c.Frontend.BindingsDir == "" && len(c.Frontend.Channels) == 0 && c.Frontend.BuildCommand == "" {
 		c.Frontend.Enabled = true
 	}

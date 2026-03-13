@@ -11,23 +11,24 @@ import (
 	"time"
 
 	"github.com/Eriyc/wailsrel/pkg/build"
+	"github.com/Eriyc/wailsrel/pkg/contract"
 	"github.com/Eriyc/wailsrel/pkg/frontend"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type FrontendState struct {
-	Enabled              bool                    `json:"enabled"`
-	CatalogURL           string                  `json:"catalogURL,omitempty"`
-	LastCheckedAt        string                  `json:"lastCheckedAt,omitempty"`
-	LastError            string                  `json:"lastError,omitempty"`
-	Offline              bool                    `json:"offline"`
-	Stale                bool                    `json:"stale"`
-	ActiveMode           string                  `json:"activeMode"`
-	Selection            string                  `json:"selection,omitempty"`
-	ActiveBundle         *FrontendBundleView     `json:"activeBundle,omitempty"`
-	InstalledCodepush    *FrontendBundleView     `json:"installedCodepush,omitempty"`
-	InstalledExperiments []FrontendBundleView    `json:"installedExperiments,omitempty"`
-	AvailableCodepush    *FrontendCodepushView   `json:"availableCodepush,omitempty"`
+	Enabled              bool                     `json:"enabled"`
+	CatalogURL           string                   `json:"catalogURL,omitempty"`
+	LastCheckedAt        string                   `json:"lastCheckedAt,omitempty"`
+	LastError            string                   `json:"lastError,omitempty"`
+	Offline              bool                     `json:"offline"`
+	Stale                bool                     `json:"stale"`
+	ActiveMode           string                   `json:"activeMode"`
+	Selection            string                   `json:"selection,omitempty"`
+	ActiveBundle         *FrontendBundleView      `json:"activeBundle,omitempty"`
+	InstalledCodepush    *FrontendBundleView      `json:"installedCodepush,omitempty"`
+	InstalledExperiments []FrontendBundleView     `json:"installedExperiments,omitempty"`
+	AvailableCodepush    *FrontendCodepushView    `json:"availableCodepush,omitempty"`
 	AvailableExperiments []FrontendExperimentView `json:"availableExperiments,omitempty"`
 }
 
@@ -321,6 +322,7 @@ func (s *Service) fetchFrontendCatalog(ctx context.Context) (*frontend.Catalog, 
 	if err != nil {
 		return nil, checkedAt, err
 	}
+	req.Header.Set("Accept", contract.PreferredAcceptHeader())
 	resp, err := s.opts.Client.Do(req)
 	if err != nil {
 		return nil, checkedAt, err
@@ -340,7 +342,7 @@ func (s *Service) fetchFrontendCatalog(ctx context.Context) (*frontend.Catalog, 
 	if err != nil {
 		return nil, checkedAt, err
 	}
-	catalog, err := frontend.DecodeCatalog(data, s.opts.FrontendCatalogPublicKey, s.opts.FrontendManager.AppID)
+	catalog, err := frontend.DecodeCatalogResponse(data, resp.Header.Get("Content-Type"), s.opts.FrontendCatalogPublicKey, s.opts.FrontendManager.AppID)
 	if err != nil {
 		return nil, checkedAt, err
 	}
@@ -349,7 +351,11 @@ func (s *Service) fetchFrontendCatalog(ctx context.Context) (*frontend.Catalog, 
 
 func (s *Service) autoApplyForcedCodepushLocked(ctx context.Context, entry frontend.CodepushEntry) error {
 	failed, err := s.opts.FrontendManager.HasForcedCodepushFailure(entry.Version)
-	if err != nil || failed {
+	if err != nil {
+		s.setFrontendError(time.Now().UTC().Format(time.RFC3339), err)
+		return err
+	}
+	if failed {
 		return err
 	}
 	if installed, _ := s.opts.FrontendManager.LoadInstalledCodepush(); installed != nil &&

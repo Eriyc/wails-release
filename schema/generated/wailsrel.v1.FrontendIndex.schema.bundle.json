@@ -1,0 +1,175 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.BundleEntry.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(assetKey)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(commitSha)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(compatId)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(displayName)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(publishedAt)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(sourceBranch)$": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "properties": {
+        "asset_key": {
+          "default": "",
+          "type": "string"
+        },
+        "channel": {
+          "default": "",
+          "type": "string"
+        },
+        "checksum": {
+          "default": "",
+          "type": "string"
+        },
+        "commit_sha": {
+          "default": "",
+          "type": "string"
+        },
+        "compat_id": {
+          "default": "",
+          "type": "string"
+        },
+        "description": {
+          "default": "",
+          "type": "string"
+        },
+        "display_name": {
+          "default": "",
+          "type": "string"
+        },
+        "force": {
+          "default": false,
+          "type": "boolean"
+        },
+        "kind": {
+          "default": "",
+          "type": "string"
+        },
+        "name": {
+          "default": "",
+          "type": "string"
+        },
+        "published_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "size": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "source_branch": {
+          "default": "",
+          "type": "string"
+        },
+        "tag": {
+          "default": "",
+          "type": "string"
+        },
+        "url": {
+          "default": "",
+          "type": "string"
+        },
+        "version": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Bundle Entry",
+      "type": "object"
+    },
+    "wailsrel.v1.FrontendIndex.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^(appId)$": {
+          "default": "",
+          "type": "string"
+        },
+        "^(generatedAt)$": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "^(schemaVersion)$": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "properties": {
+        "app_id": {
+          "default": "",
+          "type": "string"
+        },
+        "bundles": {
+          "items": {
+            "$ref": "#/$defs/wailsrel.v1.BundleEntry.schema.json"
+          },
+          "type": "array"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.schema.json"
+        },
+        "schema_version": {
+          "anyOf": [
+            {
+              "maximum": 2147483647,
+              "minimum": -2147483648,
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Frontend Index",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.FrontendIndex.schema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.FrontendIndex.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

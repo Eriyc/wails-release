@@ -1,0 +1,55 @@
+{
+  "$id": "wailsrel.v1.PublicDeltaManifest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(generated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(schema_version)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "properties": {
+    "algorithm": {
+      "default": "",
+      "type": "string"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "patches": {
+      "items": {
+        "$ref": "wailsrel.v1.PublicDeltaManifestEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "title": "Public Delta Manifest",
+  "type": "object"
+}

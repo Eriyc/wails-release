@@ -1,0 +1,72 @@
+{
+  "$id": "wailsrel.v1.PublicReleaseManifest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(frontend_bundles)$": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "^(generated_at)$": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "^(schema_version)$": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "properties": {
+    "app": {
+      "$ref": "wailsrel.v1.ManifestApp.jsonschema.json"
+    },
+    "artifacts": {
+      "items": {
+        "$ref": "wailsrel.v1.ManifestArtifact.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "delta": {
+      "$ref": "wailsrel.v1.ManifestDelta.jsonschema.json"
+    },
+    "frontendBundles": {
+      "items": {
+        "$ref": "wailsrel.v1.BundleEntry.jsonschema.json"
+      },
+      "type": "array"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.json"
+    },
+    "release": {
+      "$ref": "wailsrel.v1.ManifestRelease.jsonschema.json"
+    },
+    "schemaVersion": {
+      "anyOf": [
+        {
+          "maximum": 2147483647,
+          "minimum": -2147483648,
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    }
+  },
+  "title": "Public Release Manifest",
+  "type": "object"
+}

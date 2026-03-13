@@ -1,0 +1,34 @@
+{
+  "$id": "wailsrel.v1.ReleaseIndex.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "appIdentifier": {
+      "type": "string"
+    },
+    "appName": {
+      "type": "string"
+    },
+    "generatedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "releases": {
+      "items": {
+        "$ref": "wailsrel.v1.ReleaseEntry.jsonschema.strict.json"
+      },
+      "type": "array"
+    },
+    "schemaVersion": {
+      "maximum": 2147483647,
+      "minimum": -2147483648,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "appName",
+    "appIdentifier"
+  ],
+  "title": "Release Index",
+  "type": "object"
+}

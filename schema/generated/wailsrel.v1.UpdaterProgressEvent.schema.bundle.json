@@ -1,0 +1,39 @@
+{
+  "$defs": {
+    "wailsrel.v1.UpdaterProgressEvent.schema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "downloaded": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        },
+        "total": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "pattern": "^-?[0-9]+$",
+              "type": "string"
+            }
+          ],
+          "default": 0
+        }
+      },
+      "title": "Updater Progress Event",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterProgressEvent.schema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterProgressEvent.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

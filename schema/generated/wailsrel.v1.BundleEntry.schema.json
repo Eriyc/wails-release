@@ -1,0 +1,105 @@
+{
+  "$id": "wailsrel.v1.BundleEntry.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "patternProperties": {
+    "^(assetKey)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(commitSha)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(compatId)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(displayName)$": {
+      "default": "",
+      "type": "string"
+    },
+    "^(publishedAt)$": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "^(sourceBranch)$": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "properties": {
+    "asset_key": {
+      "default": "",
+      "type": "string"
+    },
+    "channel": {
+      "default": "",
+      "type": "string"
+    },
+    "checksum": {
+      "default": "",
+      "type": "string"
+    },
+    "commit_sha": {
+      "default": "",
+      "type": "string"
+    },
+    "compat_id": {
+      "default": "",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "type": "string"
+    },
+    "display_name": {
+      "default": "",
+      "type": "string"
+    },
+    "force": {
+      "default": false,
+      "type": "boolean"
+    },
+    "kind": {
+      "default": "",
+      "type": "string"
+    },
+    "name": {
+      "default": "",
+      "type": "string"
+    },
+    "published_at": {
+      "$ref": "google.protobuf.Timestamp.schema.json"
+    },
+    "size": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "pattern": "^-?[0-9]+$",
+          "type": "string"
+        }
+      ],
+      "default": 0
+    },
+    "source_branch": {
+      "default": "",
+      "type": "string"
+    },
+    "tag": {
+      "default": "",
+      "type": "string"
+    },
+    "url": {
+      "default": "",
+      "type": "string"
+    },
+    "version": {
+      "default": "",
+      "type": "string"
+    }
+  },
+  "title": "Bundle Entry",
+  "type": "object"
+}

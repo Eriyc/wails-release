@@ -1,0 +1,25 @@
+{
+  "$defs": {
+    "wailsrel.v1.UpdaterRelaunchRequest.jsonschema.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "executable": {
+          "default": "",
+          "type": "string"
+        }
+      },
+      "title": "Updater Relaunch Request",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterRelaunchRequest.jsonschema.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterRelaunchRequest.jsonschema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

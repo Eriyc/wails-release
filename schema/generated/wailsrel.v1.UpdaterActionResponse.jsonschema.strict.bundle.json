@@ -1,0 +1,42 @@
+{
+  "$defs": {
+    "google.protobuf.Timestamp.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "format": "date-time",
+      "title": "Timestamp",
+      "type": "string"
+    },
+    "wailsrel.v1.UpdaterActionResponse.jsonschema.strict.json": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "applied": {
+          "type": "boolean"
+        },
+        "error": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "restarted": {
+          "type": "boolean"
+        },
+        "startedAt": {
+          "$ref": "#/$defs/google.protobuf.Timestamp.jsonschema.strict.json"
+        }
+      },
+      "required": [
+        "applied",
+        "restarted",
+        "message",
+        "error"
+      ],
+      "title": "Updater Action Response",
+      "type": "object"
+    }
+  },
+  "$id": "wailsrel.v1.UpdaterActionResponse.jsonschema.strict.bundle.json",
+  "$ref": "#/$defs/wailsrel.v1.UpdaterActionResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema"
+}

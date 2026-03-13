@@ -1,10 +1,9 @@
 # Examples
 
-Use these examples to validate the delivery model you want in a consumer app:
+Use these examples to validate the two supported delivery models:
 
-- `github-releases-app`: a Wails app that checks a `manifest.json` hosted directly on GitHub Releases and downloads update artifacts from GitHub.
-- `authenticated-http-app`: a Wails app that checks a manifest from an HTTP server and downloads update artifacts through an authenticated proxy.
-- `authenticated-release-proxy`: a Bun server that proxies GitHub release assets, rewrites manifests back to its own `/download/...` endpoints, and requires a bearer token for artifact downloads.
+- `github-releases-app`: consume public release artifacts directly from a public `/manifest` endpoint.
+- `authenticated-http-app` plus `authenticated-release-proxy`: consume updates from an HTTP server that serves either JSON or protobuf and proxies asset downloads.
 
 ## GitHub Releases Example
 
@@ -29,12 +28,12 @@ Optional overrides:
 If `EXAMPLE_GITHUB_MANIFEST_URL` is unset, the app derives:
 
 ```text
-https://github.com/${EXAMPLE_GITHUB_REPOSITORY}/releases/latest/download/manifest.json
+https://releases.example.com/manifest
 ```
 
-## Authenticated HTTP Example
+## HTTP Server Example
 
-Start the Bun proxy first. Then from `examples/authenticated-http-app`:
+Start the Bun server first. Then from `examples/authenticated-http-app`:
 
 ```bash
 export EXAMPLE_PROXY_BASE_URL=http://127.0.0.1:8787
@@ -53,16 +52,17 @@ Optional overrides:
 - `EXAMPLE_TARGET_PATH`
 - `EXAMPLE_TEMP_DIR`
 
-## Bun Proxy
+## Bun HTTP Server
 
 From `examples/authenticated-release-proxy`:
 
 ```bash
 export GITHUB_REPOSITORY=owner/repo
-export GITHUB_TOKEN=ghp_xxx
 export PROXY_AUTH_TOKEN=change-me
 bun run index.ts
 ```
+
+Set `GITHUB_TOKEN` when the repo is private or you want higher GitHub API limits. It is optional for public repos.
 
 Useful optional vars:
 
@@ -73,10 +73,20 @@ Useful optional vars:
 
 Routes:
 
-- `GET /manifest.json`
-- `GET /delta/manifest.json`
+- `GET /manifest`
+- `GET /delta/manifest`
+- `GET /frontend/catalog` returns `501` in this example because frontend signing is external
 - `GET /download/:tag/:asset_name` with `Authorization: Bearer <token>`
 - `GET /healthz`
+
+Content negotiation examples:
+
+```bash
+curl -H 'Accept: application/json' http://127.0.0.1:8787/manifest
+curl -H 'Accept: application/x-protobuf' http://127.0.0.1:8787/manifest --output manifest.pb
+curl -H 'Accept: application/json' http://127.0.0.1:8787/delta/manifest
+curl -H 'Accept: application/x-protobuf' http://127.0.0.1:8787/delta/manifest --output delta-manifest.pb
+```
 
 ## Notes
 

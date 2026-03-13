@@ -1,5 +1,5 @@
-# GitHub Releases Example
+# Public Releases Example App
 
-This example is a full Wails 3 project scaffolded with `wails3 init` and then wired to the `wailsrel` updater APIs.
+This example is a full Wails 3 project scaffolded with `wails3 init` and then wired to the `wailsrel` updater APIs for the direct public-releases flow. Use it when your app can consume a public `/manifest` endpoint without an intermediate HTTP server.
 
 Run it with `wails3 dev` for development or `wails3 build` for a packaged build. See [examples/README.md](/Users/eric/Projects/wails-release/examples/README.md) for the environment variables used by this example.

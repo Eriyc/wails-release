@@ -113,6 +113,7 @@ func newReleaseCmdWithDeps(opts *Options, deps releaseDeps) *cobra.Command {
 				TempDir:         filepath.Join(projectDir, ".wailsrel", "release"),
 				Tag:             tag,
 				Version:         versionText,
+				NativeCompatID:  compatBindingsHash(compatResult),
 				Resolver:        resolver,
 				Artifacts:       artifacts,
 				FrontendBundles: frontendBundles,
@@ -314,4 +315,11 @@ func firstNonEmpty(values ...string) string {
 		}
 	}
 	return ""
+}
+
+func compatBindingsHash(result *frontendCompatResult) string {
+	if result == nil {
+		return ""
+	}
+	return strings.TrimSpace(result.BindingsHash)
 }

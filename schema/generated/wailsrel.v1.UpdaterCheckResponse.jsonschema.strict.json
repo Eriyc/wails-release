@@ -1,0 +1,25 @@
+{
+  "$id": "wailsrel.v1.UpdaterCheckResponse.jsonschema.strict.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "available": {
+      "type": "boolean"
+    },
+    "checkedAt": {
+      "$ref": "google.protobuf.Timestamp.jsonschema.strict.json"
+    },
+    "error": {
+      "type": "string"
+    },
+    "update": {
+      "$ref": "wailsrel.v1.UpdaterUpdateView.jsonschema.strict.json"
+    }
+  },
+  "required": [
+    "available",
+    "error"
+  ],
+  "title": "Updater Check Response",
+  "type": "object"
+}

@@ -125,7 +125,7 @@ func TestGeneratorFetchesGitHubAssetsAndWritesManifest(t *testing.T) {
 					"assets": []map[string]string{
 						{
 							"name":                 "MyApp.AppImage",
-							"browser_download_url": server.URL + "/assets/MyApp.AppImage",
+							"url": server.URL + "/assets/MyApp.AppImage",
 						},
 					},
 				},

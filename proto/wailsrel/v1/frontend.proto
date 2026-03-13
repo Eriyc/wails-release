@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package wailsrel.v1;
+
+option go_package = "github.com/Eriyc/wailsrel/gen/go/wailsrel/v1;wailsrelv1";
+
+import "google/protobuf/timestamp.proto";
+
+message FrontendIndex {
+  int32 schema_version = 1;
+  string app_id = 2;
+  google.protobuf.Timestamp generated_at = 3;
+  repeated BundleEntry bundles = 4;
+}
+
+message BundleEntry {
+  string tag = 1;
+  string kind = 2;
+  string name = 3;
+  string version = 4;
+  string compat_id = 5;
+  string asset_key = 6;
+  string checksum = 7;
+  int64 size = 8;
+  bool force = 9;
+  string channel = 10;
+  google.protobuf.Timestamp published_at = 11;
+  string source_branch = 12;
+  string commit_sha = 13;
+  string display_name = 14;
+  string description = 15;
+  string url = 16;
+}
+
+message FrontendCatalog {
+  int32 schema_version = 1;
+  string app_id = 2;
+  google.protobuf.Timestamp generated_at = 3;
+  repeated FrontendCatalogBundle codepush = 4;
+  repeated FrontendCatalogBundle experiments = 5;
+  string signature = 6;
+  google.protobuf.Timestamp signed_at = 7;
+}
+
+message FrontendCatalogBundle {
+  string name = 1;
+  string version = 2;
+  string compat_id = 3;
+  string url = 4;
+  string checksum = 5;
+  int64 size = 6;
+  bool force = 7;
+  google.protobuf.Timestamp published_at = 8;
+  string display_name = 9;
+  string description = 10;
+  string kind = 11;
+  string channel = 12;
+  string asset_key = 13;
+  string tag = 14;
+  string source_branch = 15;
+  string commit_sha = 16;
+}
