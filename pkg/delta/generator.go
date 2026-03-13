@@ -1,35 +1,45 @@
 package delta
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
+	"context"
 	"errors"
 	"fmt"
-	"io"
-	"io/fs"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
-	"github.com/gabstv/go-bsdiff/pkg/bsdiff"
 	"github.com/you/wailsrel/pkg/version"
 )
 
+const manifestFileName = "manifest.json"
+
 type Options struct {
-	OutputDir    string
-	CacheDir     string
-	FromVersions int
-	Source       string
-	TagPrefix    string
+	OutputDir        string
+	CacheDir         string
+	FromVersions     int
+	Source           string
+	TagPrefix        string
+	Repository       string
+	ManifestURL      string
+	AuthToken        string
+	GitHubAPIBaseURL string
+	HTTPClient       *http.Client
 }
 
 type Generator struct {
-	outputDir    string
-	cacheDir     string
-	fromVersions int
-	source       string
-	tagPrefix    string
+	outputDir        string
+	cacheDir         string
+	fromVersions     int
+	source           string
+	tagPrefix        string
+	repository       string
+	manifestURL      string
+	authToken        string
+	githubAPIBaseURL string
+	httpClient       *http.Client
 }
 
 type Plan struct {
@@ -42,11 +52,12 @@ type Plan struct {
 }
 
 type Pending struct {
-	FromVersion string `json:"from_version"`
-	Artifact    string `json:"artifact"`
-	Previous    string `json:"previous"`
-	Current     string `json:"current"`
-	Patch       string `json:"patch"`
+	FromVersion  string       `json:"from_version"`
+	Artifact     string       `json:"artifact"`
+	ArtifactKind ArtifactKind `json:"artifact_kind"`
+	Previous     string       `json:"previous"`
+	Current      string       `json:"current"`
+	Patch        string       `json:"patch"`
 }
 
 type Skipped struct {
@@ -56,19 +67,27 @@ type Skipped struct {
 }
 
 type Result struct {
-	OutputDir string      `json:"output_dir"`
-	CacheDir  string      `json:"cache_dir"`
-	Source    string      `json:"source"`
-	Generated []Generated `json:"generated"`
-	Skipped   []Skipped   `json:"skipped"`
+	OutputDir    string      `json:"output_dir"`
+	CacheDir     string      `json:"cache_dir"`
+	Source       string      `json:"source"`
+	ManifestPath string      `json:"manifest_path"`
+	Generated    []Generated `json:"generated"`
+	Skipped      []Skipped   `json:"skipped"`
 }
 
 type Generated struct {
-	FromVersion string `json:"from_version"`
-	Artifact    string `json:"artifact"`
-	Patch       string `json:"patch"`
-	Checksum    string `json:"checksum"`
-	Size        int64  `json:"size"`
+	FromVersion    string       `json:"from_version"`
+	Artifact       string       `json:"artifact"`
+	ArtifactKind   ArtifactKind `json:"artifact_kind"`
+	Patch          string       `json:"patch"`
+	Checksum       string       `json:"checksum"`
+	FromChecksum   string       `json:"from_checksum"`
+	ToChecksum     string       `json:"to_checksum"`
+	FromSize       int64        `json:"from_size"`
+	ToSize         int64        `json:"to_size"`
+	Size           int64        `json:"size"`
+	SavingsBytes   int64        `json:"savings_bytes"`
+	SavingsPercent float64      `json:"savings_percent"`
 }
 
 type cachedVersion struct {
@@ -80,22 +99,45 @@ type cachedVersion struct {
 type currentArtifact struct {
 	relative string
 	path     string
-	isDir    bool
+	kind     ArtifactKind
 }
 
 func NewGenerator(opts Options) *Generator {
+	baseURL := strings.TrimSpace(opts.GitHubAPIBaseURL)
+	if baseURL == "" {
+		baseURL = "https://api.github.com"
+	}
+
+	client := opts.HTTPClient
+	if client == nil {
+		client = &http.Client{Timeout: 30 * time.Second}
+	}
+
 	return &Generator{
-		outputDir:    filepath.Clean(opts.OutputDir),
-		cacheDir:     filepath.Clean(opts.CacheDir),
-		fromVersions: opts.FromVersions,
-		source:       opts.Source,
-		tagPrefix:    opts.TagPrefix,
+		outputDir:        filepath.Clean(opts.OutputDir),
+		cacheDir:         filepath.Clean(opts.CacheDir),
+		fromVersions:     opts.FromVersions,
+		source:           opts.Source,
+		tagPrefix:        opts.TagPrefix,
+		repository:       strings.TrimSpace(opts.Repository),
+		manifestURL:      strings.TrimSpace(opts.ManifestURL),
+		authToken:        strings.TrimSpace(opts.AuthToken),
+		githubAPIBaseURL: strings.TrimRight(baseURL, "/"),
+		httpClient:       client,
 	}
 }
 
 func (g *Generator) Plan() (*Plan, error) {
+	return g.PlanContext(context.Background())
+}
+
+func (g *Generator) PlanContext(ctx context.Context) (*Plan, error) {
 	artifacts, err := discoverCurrentArtifacts(g.outputDir)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := g.prepareCache(ctx, artifacts); err != nil {
 		return nil, err
 	}
 
@@ -118,17 +160,9 @@ func (g *Generator) Plan() (*Plan, error) {
 	}
 
 	for _, artifact := range artifacts {
-		if artifact.isDir {
-			plan.Skipped = append(plan.Skipped, Skipped{
-				Artifact: artifact.relative,
-				Reason:   "directory artifacts are not supported for delta generation",
-			})
-			continue
-		}
-
 		for _, cached := range versions {
 			previousPath := filepath.Join(cached.cacheDir, filepath.FromSlash(artifact.relative))
-			info, err := os.Stat(previousPath)
+			previousKind, err := detectArtifactKind(previousPath)
 			if err != nil {
 				if errors.Is(err, os.ErrNotExist) {
 					plan.Skipped = append(plan.Skipped, Skipped{
@@ -140,16 +174,16 @@ func (g *Generator) Plan() (*Plan, error) {
 				}
 				return nil, err
 			}
-			if info.IsDir() {
+			if previousKind != artifact.kind {
 				plan.Skipped = append(plan.Skipped, Skipped{
 					FromVersion: cached.name,
 					Artifact:    artifact.relative,
-					Reason:      "directory artifacts are not supported for delta generation",
+					Reason:      fmt.Sprintf("artifact kind mismatch: current=%s previous=%s", artifact.kind, previousKind),
 				})
 				continue
 			}
 
-			same, err := sameFileContents(previousPath, artifact.path)
+			same, err := sameArtifactContents(previousPath, artifact.path)
 			if err != nil {
 				return nil, err
 			}
@@ -163,23 +197,31 @@ func (g *Generator) Plan() (*Plan, error) {
 			}
 
 			plan.Pending = append(plan.Pending, Pending{
-				FromVersion: cached.name,
-				Artifact:    artifact.relative,
-				Previous:    previousPath,
-				Current:     artifact.path,
-				Patch:       filepath.Join(g.outputDir, "delta", cached.name, filepath.FromSlash(artifact.relative)+".bsdiff"),
+				FromVersion:  cached.name,
+				Artifact:     artifact.relative,
+				ArtifactKind: artifact.kind,
+				Previous:     previousPath,
+				Current:      artifact.path,
+				Patch:        filepath.Join(g.outputDir, "delta", cached.name, filepath.FromSlash(artifact.relative)+".patch"),
 			})
 		}
 	}
 
-	if len(plan.Versions) == 0 && (g.source == "github-release" || g.source == "url") {
-		return nil, fmt.Errorf("no cached artifacts found in %s; remote fetching for %s is not implemented", g.cacheDir, g.source)
+	if len(plan.Versions) == 0 && strings.TrimSpace(g.source) == "github-release" {
+		return nil, fmt.Errorf("no cached artifacts found in %s after fetching GitHub releases for %s", g.cacheDir, g.repository)
+	}
+	if len(plan.Versions) == 0 && strings.TrimSpace(g.source) == "url" {
+		return nil, fmt.Errorf("no cached artifacts found in %s after fetching release manifest %s", g.cacheDir, g.manifestURL)
 	}
 
 	return plan, nil
 }
 
 func (g *Generator) Generate(plan *Plan) (*Result, error) {
+	return g.GenerateContext(context.Background(), plan)
+}
+
+func (g *Generator) GenerateContext(_ context.Context, plan *Plan) (*Result, error) {
 	result := &Result{
 		OutputDir: g.outputDir,
 		CacheDir:  g.cacheDir,
@@ -192,23 +234,37 @@ func (g *Generator) Generate(plan *Plan) (*Result, error) {
 		if err := os.MkdirAll(filepath.Dir(pending.Patch), 0o755); err != nil {
 			return nil, err
 		}
-		if err := bsdiff.File(pending.Previous, pending.Current, pending.Patch); err != nil {
+
+		info, err := Generate(pending.Previous, pending.Current, pending.Patch)
+		if err != nil {
 			return nil, fmt.Errorf("generate patch for %s from %s: %w", pending.Artifact, pending.FromVersion, err)
 		}
 
-		checksum, size, err := fileDigest(pending.Patch)
-		if err != nil {
-			return nil, err
-		}
-
 		result.Generated = append(result.Generated, Generated{
-			FromVersion: pending.FromVersion,
-			Artifact:    pending.Artifact,
-			Patch:       pending.Patch,
-			Checksum:    "sha256:" + checksum,
-			Size:        size,
+			FromVersion:    pending.FromVersion,
+			Artifact:       pending.Artifact,
+			ArtifactKind:   info.ArtifactKind,
+			Patch:          pending.Patch,
+			Checksum:       "sha256:" + info.PatchChecksum,
+			FromChecksum:   "sha256:" + info.FromChecksum,
+			ToChecksum:     "sha256:" + info.ToChecksum,
+			FromSize:       info.FromSize,
+			ToSize:         info.ToSize,
+			Size:           info.PatchSize,
+			SavingsBytes:   info.SavingsBytes,
+			SavingsPercent: info.SavingsPercent,
 		})
 	}
+
+	manifest := BuildManifest(g.outputDir, result.Generated)
+	manifestPath := filepath.Join(g.outputDir, "delta", manifestFileName)
+	if err := WriteManifest(manifest, manifestPath); err != nil {
+		return nil, err
+	}
+	if err := ValidateManifest(manifest); err != nil {
+		return nil, err
+	}
+	result.ManifestPath = manifestPath
 
 	return result, nil
 }
@@ -248,10 +304,15 @@ func discoverCurrentArtifacts(outputDir string) ([]currentArtifact, error) {
 					continue
 				}
 
+				kind := ArtifactFile
+				if artifactEntry.IsDir() {
+					kind = ArtifactDirectory
+				}
+
 				artifacts = append(artifacts, currentArtifact{
 					relative: filepath.ToSlash(filepath.Join(osEntry.Name(), archEntry.Name(), name)),
 					path:     filepath.Join(archDir, name),
-					isDir:    artifactEntry.IsDir(),
+					kind:     kind,
 				})
 			}
 		}
@@ -267,7 +328,7 @@ func discoverCurrentArtifacts(outputDir string) ([]currentArtifact, error) {
 func discoverCachedVersions(cacheRoot, tagPrefix string, limit int) ([]cachedVersion, error) {
 	entries, err := os.ReadDir(cacheRoot)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
+		if errors.Is(err, os.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, err
@@ -308,43 +369,15 @@ func discoverCachedVersions(cacheRoot, tagPrefix string, limit int) ([]cachedVer
 	return versions, nil
 }
 
-func sameFileContents(a, b string) (bool, error) {
-	infoA, err := os.Stat(a)
+func sameArtifactContents(a, b string) (bool, error) {
+	kindA, checksumA, _, err := artifactSummary(a)
 	if err != nil {
 		return false, err
 	}
-	infoB, err := os.Stat(b)
-	if err != nil {
-		return false, err
-	}
-	if infoA.Size() != infoB.Size() {
-		return false, nil
-	}
-
-	checksumA, _, err := fileDigest(a)
-	if err != nil {
-		return false, err
-	}
-	checksumB, _, err := fileDigest(b)
+	kindB, checksumB, _, err := artifactSummary(b)
 	if err != nil {
 		return false, err
 	}
 
-	return checksumA == checksumB, nil
-}
-
-func fileDigest(path string) (string, int64, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return "", 0, err
-	}
-	defer file.Close()
-
-	hash := sha256.New()
-	size, err := io.Copy(hash, file)
-	if err != nil {
-		return "", 0, err
-	}
-
-	return hex.EncodeToString(hash.Sum(nil)), size, nil
+	return kindA == kindB && checksumA == checksumB, nil
 }

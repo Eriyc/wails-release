@@ -20,6 +20,7 @@ type Config struct {
 	Delta      DeltaConfig     `yaml:"delta"`
 	Frontend   FrontendConfig  `yaml:"frontend"`
 	Update     UpdateConfig    `yaml:"update"`
+	Release    ReleaseConfig   `yaml:"release"`
 	Output     OutputConfig    `yaml:"output"`
 	CI         CIConfig        `yaml:"ci"`
 }
@@ -93,9 +94,11 @@ type DeltaConfig struct {
 }
 
 type OldArtifactsConfig struct {
-	Source     string `yaml:"source"`
-	Repository string `yaml:"repository"`
-	CacheDir   string `yaml:"cache_dir"`
+	Source       string `yaml:"source"`
+	Repository   string `yaml:"repository"`
+	CacheDir     string `yaml:"cache_dir"`
+	ManifestURL  string `yaml:"manifest_url"`
+	AuthTokenEnv string `yaml:"auth_token_env"`
 }
 
 type FrontendConfig struct {
@@ -114,6 +117,24 @@ type UpdateConfig struct {
 	Channels       []string `yaml:"channels"`
 	AllowDowngrade bool     `yaml:"allow_downgrade"`
 	MandatoryMin   string   `yaml:"mandatory_min"`
+}
+
+type ReleaseConfig struct {
+	Provider string              `yaml:"provider"`
+	GitHub   ReleaseGitHubConfig `yaml:"github"`
+	HTTP     ReleaseHTTPConfig   `yaml:"http"`
+}
+
+type ReleaseGitHubConfig struct {
+	Repository string `yaml:"repository"`
+	APIBaseURL string `yaml:"api_base_url"`
+}
+
+type ReleaseHTTPConfig struct {
+	BaseURL            string `yaml:"base_url"`
+	ManifestPath       string `yaml:"manifest_path"`
+	DeltaManifestPath  string `yaml:"delta_manifest_path"`
+	DownloadPathPrefix string `yaml:"download_path_prefix"`
 }
 
 type OutputConfig struct {

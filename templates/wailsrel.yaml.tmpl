@@ -60,6 +60,8 @@ delta:
     source: github-release
     repository: ""
     cache_dir: ".wailsrel/cache"
+    manifest_url: ""
+    auth_token_env: ""
 
 frontend:
   enabled: true
@@ -77,6 +79,17 @@ update:
   allow_downgrade: false
   mandatory_min: ""
 
+release:
+  provider: github
+  github:
+    repository: ""
+    api_base_url: "https://api.github.com"
+  http:
+    base_url: "https://releases.example.com"
+    manifest_path: "/manifest.json"
+    delta_manifest_path: "/delta/manifest.json"
+    download_path_prefix: "/download"
+
 output:
   dir: "dist"
   manifest_file: "manifest.json"
@@ -88,4 +101,3 @@ ci:
   artifacts:
     upload: true
     retention_days: 90
-

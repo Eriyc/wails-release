@@ -60,7 +60,7 @@ output:
 	}
 
 	output := stdout.String()
-	for _, expected := range []string{`"from_version": "v1.0.0"`, `"artifact": "linux/amd64/MyApp.AppImage"`, `"pending"`} {
+	for _, expected := range []string{`"from_version": "v1.0.0"`, `"artifact": "linux/amd64/MyApp.AppImage"`, `"pending"`, `.patch"`} {
 		if !strings.Contains(output, expected) {
 			t.Fatalf("expected %q in output, got %q", expected, output)
 		}
@@ -118,11 +118,18 @@ output:
 		t.Fatalf("execute delta: %v", err)
 	}
 
-	patchPath := filepath.Join(repo, "dist", "delta", "v1.0.0", "linux", "amd64", "MyApp.AppImage.bsdiff")
+	patchPath := filepath.Join(repo, "dist", "delta", "v1.0.0", "linux", "amd64", "MyApp.AppImage.patch")
 	if _, err := os.Stat(patchPath); err != nil {
 		t.Fatalf("expected patch %s: %v", patchPath, err)
 	}
+	manifestPath := filepath.Join(repo, "dist", "delta", "manifest.json")
+	if _, err := os.Stat(manifestPath); err != nil {
+		t.Fatalf("expected manifest %s: %v", manifestPath, err)
+	}
 	if !strings.Contains(stdout.String(), "Generated 1 patch(es)") {
 		t.Fatalf("unexpected output %q", stdout.String())
+	}
+	if !strings.Contains(stdout.String(), "smaller") {
+		t.Fatalf("expected savings output, got %q", stdout.String())
 	}
 }

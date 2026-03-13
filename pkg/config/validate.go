@@ -10,13 +10,14 @@ import (
 )
 
 var (
-	validVersionSources = []string{"git", "file"}
-	validTargetOS       = []string{"darwin", "windows", "linux"}
-	validArch           = []string{"amd64", "arm64"}
-	validSignProviders  = []string{"", "none", "apple", "apple-rcodesign", "azure"}
-	validOutputFormats  = []string{"app", "dmg", "exe", "nsis", "appimage", "deb", "rpm", "binary", "zip"}
-	validArtifactSource = []string{"github-release", "local-cache", "url"}
-	validCIProviders    = []string{"github"}
+	validVersionSources   = []string{"git", "file"}
+	validTargetOS         = []string{"darwin", "windows", "linux"}
+	validArch             = []string{"amd64", "arm64"}
+	validSignProviders    = []string{"", "none", "apple", "apple-rcodesign", "azure"}
+	validOutputFormats    = []string{"app", "dmg", "exe", "nsis", "appimage", "deb", "rpm", "binary", "zip"}
+	validArtifactSource   = []string{"github-release", "local-cache", "url"}
+	validReleaseProviders = []string{"github", "http"}
+	validCIProviders      = []string{"github"}
 )
 
 var validSignProvidersByOS = map[string][]string{
@@ -117,6 +118,18 @@ func (c *Config) Validate() []ValidationError {
 		if !slices.Contains(validArtifactSource, c.Delta.OldArtifacts.Source) {
 			errs = append(errs, ValidationError{Field: "delta.old_artifacts.source", Message: "unsupported old artifact source", Fatal: true})
 		}
+		if c.Delta.OldArtifacts.Source == "url" {
+			manifestURL := strings.TrimSpace(c.Delta.OldArtifacts.ManifestURL)
+			if manifestURL == "" {
+				manifestURL = strings.TrimSpace(c.Update.ManifestURL)
+			}
+			if manifestURL == "" && strings.TrimSpace(c.Release.Provider) == "http" {
+				manifestURL = strings.TrimSpace(c.Release.HTTP.BaseURL)
+			}
+			if manifestURL == "" {
+				errs = append(errs, ValidationError{Field: "delta.old_artifacts.manifest_url", Message: "must be set directly or derivable when source=url", Fatal: true})
+			}
+		}
 	}
 
 	if c.Frontend.Enabled {
@@ -145,6 +158,22 @@ func (c *Config) Validate() []ValidationError {
 	if c.Update.CheckInterval != "" {
 		if _, err := time.ParseDuration(c.Update.CheckInterval); err != nil {
 			errs = append(errs, ValidationError{Field: "update.check_interval", Message: "must be a valid duration", Fatal: true})
+		}
+	}
+
+	if !slices.Contains(validReleaseProviders, c.Release.Provider) {
+		errs = append(errs, ValidationError{Field: "release.provider", Message: "must be one of github,http", Fatal: true})
+	}
+	if strings.TrimSpace(c.Release.GitHub.APIBaseURL) != "" {
+		if _, err := url.ParseRequestURI(c.Release.GitHub.APIBaseURL); err != nil {
+			errs = append(errs, ValidationError{Field: "release.github.api_base_url", Message: "must be a valid URL", Fatal: true})
+		}
+	}
+	if c.Release.Provider == "http" {
+		if strings.TrimSpace(c.Release.HTTP.BaseURL) == "" {
+			errs = append(errs, ValidationError{Field: "release.http.base_url", Message: "must be set when release.provider=http", Fatal: true})
+		} else if _, err := url.ParseRequestURI(c.Release.HTTP.BaseURL); err != nil {
+			errs = append(errs, ValidationError{Field: "release.http.base_url", Message: "must be a valid URL", Fatal: true})
 		}
 	}
 

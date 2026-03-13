@@ -11,6 +11,11 @@ The repository currently includes the Phase 0-4 baseline:
 - Delta patch generation against cached prior release artifacts
 - Baseline `go test ./...` and `go vet ./...` workflow
 
+Reference gateways now exist in both Go and Bun/WinterTC-style JavaScript:
+
+- Go: `go run ./cmd/wailsrel-gateway`
+- Bun example: `bun run ./docs/examples/bun-gateway.ts`
+
 ## Quick start
 
 ```bash

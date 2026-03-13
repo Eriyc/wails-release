@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "wailsrel Delta Manifest",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "algorithm",
+    "generated_at",
+    "patches"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "algorithm": {
+      "type": "string",
+      "const": "bsdiff"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "patches": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/patch"
+      }
+    }
+  },
+  "$defs": {
+    "patch": {
+      "type": "object",
+      "required": [
+        "from_version",
+        "artifact",
+        "patch",
+        "artifact_kind",
+        "from_sha256",
+        "to_sha256",
+        "patch_sha256",
+        "from_size",
+        "to_size",
+        "patch_size"
+      ],
+      "properties": {
+        "from_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact": {
+          "type": "string",
+          "minLength": 1
+        },
+        "patch": {
+          "type": "string",
+          "minLength": 1
+        },
+        "artifact_kind": {
+          "type": "string",
+          "enum": ["file", "directory"]
+        },
+        "from_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "to_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "patch_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "from_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "to_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "patch_size": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "savings_bytes": {
+          "type": "integer"
+        },
+        "savings_percent": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

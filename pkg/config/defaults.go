@@ -59,6 +59,22 @@ func (c *Config) applyDefaults() {
 		c.Update.Channels = []string{"stable", "beta"}
 	}
 
+	if c.Release.Provider == "" {
+		c.Release.Provider = "github"
+	}
+	if c.Release.GitHub.APIBaseURL == "" {
+		c.Release.GitHub.APIBaseURL = "https://api.github.com"
+	}
+	if c.Release.HTTP.ManifestPath == "" {
+		c.Release.HTTP.ManifestPath = "/manifest.json"
+	}
+	if c.Release.HTTP.DeltaManifestPath == "" {
+		c.Release.HTTP.DeltaManifestPath = "/delta/manifest.json"
+	}
+	if c.Release.HTTP.DownloadPathPrefix == "" {
+		c.Release.HTTP.DownloadPathPrefix = "/download"
+	}
+
 	if c.Output.Dir == "" {
 		c.Output.Dir = "dist"
 	}

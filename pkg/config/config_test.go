@@ -43,6 +43,12 @@ targets:
 	if !cfg.CI.Artifacts.Upload {
 		t.Fatal("expected CI artifact upload default to true")
 	}
+	if cfg.Release.Provider != "github" {
+		t.Fatalf("expected default release provider github, got %q", cfg.Release.Provider)
+	}
+	if cfg.Release.HTTP.DownloadPathPrefix != "/download" {
+		t.Fatalf("expected default download path prefix /download, got %q", cfg.Release.HTTP.DownloadPathPrefix)
+	}
 }
 
 func TestValidateReportsFatalErrors(t *testing.T) {
@@ -132,5 +138,100 @@ func TestValidateRejectsUnsupportedSigningConfiguration(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("expected unsupported signing provider error, got %+v", errs)
+	}
+}
+
+func TestValidateRequiresHTTPReleaseBaseURL(t *testing.T) {
+	cfg := &Config{
+		App: AppConfig{
+			Name:       "MyApp",
+			Identifier: "com.example.myapp",
+		},
+		Version: VersionConfig{
+			Source: "git",
+		},
+		Targets: []TargetConfig{
+			{
+				OS:            "linux",
+				Arch:          []string{"amd64"},
+				OutputFormats: []string{"binary"},
+				Sign: SignConfig{
+					Provider: "none",
+				},
+			},
+		},
+		Release: ReleaseConfig{
+			Provider: "http",
+		},
+		Output: OutputConfig{
+			Dir:          "dist",
+			ManifestFile: "manifest.json",
+		},
+		CI: CIConfig{
+			Provider: "github",
+			Timeout:  "30m",
+		},
+	}
+
+	errs := cfg.Validate()
+	var found bool
+	for _, err := range errs {
+		if err.Field == "release.http.base_url" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected release.http.base_url validation error, got %+v", errs)
+	}
+}
+
+func TestValidateRequiresURLManifestSource(t *testing.T) {
+	cfg := &Config{
+		App: AppConfig{
+			Name:       "MyApp",
+			Identifier: "com.example.myapp",
+		},
+		Version: VersionConfig{
+			Source: "git",
+		},
+		Targets: []TargetConfig{
+			{
+				OS:            "linux",
+				Arch:          []string{"amd64"},
+				OutputFormats: []string{"binary"},
+				Sign: SignConfig{
+					Provider: "none",
+				},
+			},
+		},
+		Delta: DeltaConfig{
+			Enabled:      true,
+			Algorithm:    "bsdiff",
+			FromVersions: 1,
+			OldArtifacts: OldArtifactsConfig{
+				Source: "url",
+			},
+		},
+		Output: OutputConfig{
+			Dir:          "dist",
+			ManifestFile: "manifest.json",
+		},
+		CI: CIConfig{
+			Provider: "github",
+			Timeout:  "30m",
+		},
+	}
+
+	errs := cfg.Validate()
+	var found bool
+	for _, err := range errs {
+		if err.Field == "delta.old_artifacts.manifest_url" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected delta.old_artifacts.manifest_url validation error, got %+v", errs)
 	}
 }

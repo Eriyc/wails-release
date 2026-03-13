@@ -17,6 +17,7 @@ type buildView struct {
 	Targets   []build.Target   `json:"targets"`
 	Artifacts []build.Artifact `json:"artifacts"`
 	Duration  string           `json:"duration"`
+	Warnings  []string         `json:"warnings,omitempty"`
 }
 
 func newBuildCmd(opts *Options) *cobra.Command {
@@ -41,9 +42,20 @@ func newBuildCmd(opts *Options) *cobra.Command {
 				Targets:   matrix,
 			}
 
+			compatResult, err := checkFrontendCompat(projectDir, cfg)
+			if err != nil {
+				return err
+			}
+			if compatResult != nil {
+				view.Warnings = append(view.Warnings, compatResult.Warnings...)
+			}
+
 			if opts.DryRun {
 				if opts.JSON {
 					return writeJSON(cmd.OutOrStdout(), view)
+				}
+				if err := emitWarnings(cmd.ErrOrStderr(), view.Warnings); err != nil {
+					return err
 				}
 
 				_, err := fmt.Fprintf(cmd.OutOrStdout(), "Output dir: %s\nTargets:\n", outputDir)
@@ -90,6 +102,9 @@ func newBuildCmd(opts *Options) *cobra.Command {
 				view.Artifacts = append(view.Artifacts, result.Artifacts...)
 			}
 			view.Duration = time.Since(start).String()
+			if err := persistFrontendCompat(projectDir, cfg, compatResult); err != nil {
+				return err
+			}
 
 			if info := ci.Detect(); info.IsGitHubActions && cfg.CI.Artifacts.Upload {
 				paths := make([]string, 0, len(view.Artifacts))
@@ -103,6 +118,9 @@ func newBuildCmd(opts *Options) *cobra.Command {
 
 			if opts.JSON {
 				return writeJSON(cmd.OutOrStdout(), view)
+			}
+			if err := emitWarnings(cmd.ErrOrStderr(), view.Warnings); err != nil {
+				return err
 			}
 
 			_, err = fmt.Fprintf(cmd.OutOrStdout(), "Built %d artifact(s) in %s\n", len(view.Artifacts), view.Duration)
